@@ -1,0 +1,315 @@
+---
+title: "SOC722 Exercise Week 1"
+author: "Zhe Chen"
+date: "2026-01-18"
+format: 
+  html: 
+    embed-resources: true
+  pdf: default
+editor: visual
+execute:
+  error: true
+---
+
+## Exercise 1.1
+
+> Try typing `typeof(mtcars)` and `class(mtcars)` in the console to see what happens.
+>
+> Now type the following chunks of code into your console and understand what they do:
+>
+> -   `nrow(mtcars)`
+>
+> -   `ncol(mtcars)`
+>
+> -   `length(mtcars)`
+>
+> -   `dim(mtcars)`
+>
+> -   `rownames(mtcars)`
+>
+> -   `colnames(mtcars)`
+>
+> Briefly describe what each of these do.
+
+```{r}
+typeof(mtcars)
+```
+
+-   The type of `mtcars` is `list`.
+
+```{r}
+class(mtcars)
+```
+
+-   The class of `mtcars` is `data.frame`.
+
+```{r}
+nrow(mtcars)
+```
+
+-   The number of rows in `mtcars` is 32.
+
+```{r}
+ncol(mtcars)
+```
+
+-   The number of columns in `mtcars` is 11.
+
+```{r}
+length(mtcars)
+```
+
+-   The length of `mtcars` is 11.
+
+```{r}
+dim(mtcars)
+```
+
+-   The dimension of `mtcars` is (32,11), i.e., it has 32 rows and 11 columns.
+
+```{r}
+rownames(mtcars)
+```
+
+-   The names of rows (observations) in `mtcars` are "Mazda Rx4", "Mazda Rx4 Wag", "Datsun 710"...
+
+```{r}
+colnames(mtcars)
+```
+
+-   The names of columns (variables) in `mtcars` are "mpg", "cyl", "disp"...
+
+# Exercise 1.2
+
+> I suggest you always use long-form when creating logical vectors. Try assigning a different value to `TRUE` and to `T`.
+>
+> Code
+>
+> ```         
+> T <- 123 
+> TRUE <- 123
+> ```
+>
+> *What just happened?*
+
+```{r}
+T <- 123
+T
+TRUE <- 123
+TRUE
+```
+
+-   Assign value 123 to `T`. It succeeds.
+-   Assign value 123 to `TRUE`. It fails, and R returns `Error in TRUE <- 123 : invalid (do_set) left-hand side to assignment`.
+
+# Exercise 1.3
+
+> *Implicit coercion*
+>
+> You can create atomic vectors of any length with `c()` for “concatenate”.
+>
+> For example:
+>
+> ```         
+> lgl <- c(TRUE, FALSE, NA) 
+> int <- c(1L, 6L, NA, 10L) 
+> dbl <- c(1, NA, 2.5, 4.5) 
+> chr <- c(NA, "these are", "some strings")
+> ```
+>
+> Recall that atomic vectors are homogeneous. If you try to concatenate vectors of different types you will end up discovering **implicit coercion**. Basically, different types will be coerced in the following order: logical → integer → double → character. For example, a logical and a character combine into a character:
+>
+> ```{r}
+> str(c(TRUE, "chr")) ## str() is (almost) identical to dplyr::glimpse()
+> ```
+>
+> Test your knowledge of the vector coercion rules by predicting the output of the following uses of `c()`:
+>
+> ```         
+> c(1, FALSE)
+> c("a", 1)
+> c(TRUE, 1L)
+> ```
+
+-   `c(1, FALSE)` is a *double*.
+-   `c("a", 1)` is a *character*.
+-   `c(TRUE, 1L)` is an *integer*.
+
+# Exercise 1.4
+
+> *Explicit coercion*
+>
+> Explicit coercion happens when you call a function like `as.logical()`, `as.integer()`, `as.double()`, or `as.character()`. Use `as.integer()` on FALSE and TRUE, what values do they get coerced to?
+
+```{r}
+as.integer(FALSE)
+```
+
+-   The value of `as.integer(FALSE)` is 0.
+
+```{r}
+as.integer(TRUE)
+```
+
+-   The value of `as.integer(TRUE)` is 1.
+
+# Exercise 1.5
+
+> The most common form of implicit coercion
+>
+> The following chunk of code creates a logical vector of size 75.
+>
+> ```{r}
+> x <- sample(c(TRUE, FALSE), size = 75, replace = TRUE)
+> str(x)
+> ```
+
+```{r}
+x <- sample(c(TRUE, FALSE), size = 75, replace = TRUE)
+```
+
+-   The number of `TRUE` in `x` is:
+
+```{r}
+sum(x)
+```
+
+-   The proportion of `TRUE` in `x` is:
+
+```{r}
+mean(x)
+```
+
+```{r}
+mean(x) == sum(x) / length(x)
+```
+
+-   Yes, `mean(x)` and `sum(x) / length(x)` are equal.
+
+# Exercise 1.6
+
+> What is the difference between mtcars\["mpg"\] and mtcars\[\["mpg"\]\]? More generally, what is the difference between the \[ and \[\[ operators?
+>
+> Which of the following two is `TRUE`? \`\`\` identical(mtcars\["mpg"\], mtcars$mpg)
+> identical(mtcars[["mpg"]], mtcars$mpg)
+
+```{r}
+mtcars["mpg"]
+str(mtcars["mpg"])
+mtcars[["mpg"]]
+str(mtcars[["mpg"]])
+```
+
+-   `[]` returns a data frame, while `[[]]` returns a vector (i.e., the content of `mpg` column in that data frame)
+
+```{r}
+identical(mtcars["mpg"], mtcars$mpg)
+identical(mtcars[["mpg"]], mtcars$mpg)
+```
+
+-   `identical(mtcars[["mpg"]], mtcars$mpg)` is `TURE`.
+
+# Exercise 1.7
+
+> `letters` is a built-in object in R that contains the 26 letters of English alphabet.
+>
+> Using the \[ operator, do the following: - Extract the 17th value of `letters` - Create a sequence of even numbers from 2 to 26 and use that to subset `letters` - Use 8:12 to subset `letters`.
+>
+> This is known as integer subsetting.
+>
+> What happens if instead of \[ you use \[\[?
+
+```{r}
+letters
+letters[17]
+even_numbers <- seq(2, 26, 2)
+letters[even_numbers]
+letters[8:12]
+letters[[8:12]]
+```
+
+-   If using `[[8:12]]`, R returns `Error in letters[[8:12]] : attempt to select more than one element in vectorIndex`. Because `[[]]` only allows for extracting one element.
+
+# Exercise 1.8
+
+> Now that you know all this
+>
+> Replace the 18th value of `letters` with a missing value (`NA`).
+
+```{r}
+letters[18] <- NA
+letters
+```
+
+# Exercise 1.9
+
+> Subset `mtcars` so that we only see the observations for which `cyl == 4`.
+>
+> Subset `mtcars` so that we only see the observations for which `mpg` is greater than 23.
+
+```{r}
+mtcars[mtcars$cyl == 4, ]
+mtcars[mtcars$mpg > 23, ]
+```
+
+# Exercise 1.10
+
+> Using what I told you earlier about the `search()` function, explain why you get two different errors. What is going on? What is R doing when you type `table(year)`? (You might want to type `search()` into the console again). In what package does R find the year object?
+
+```{r}
+table(year)
+```
+
+```{r}
+search()
+```
+
+-   R returns `Error: object 'year' not found`. It is because neither `palmerpenguins` or `tidyverse` is loaded, and R cannot find the object `year` in the global environment.
+
+```{r}
+library(tidyverse)
+library(palmerpenguins)
+table(year)
+```
+
+```{r}
+search()
+find("year")
+year
+```
+
+-   R returns `Error in unique.default(x, nmax = nmax): unique() applies only to vectors`. It is because R finds `year` in `tidyverse` which is a `function`, and R cannot apply `unique()` to a `function`.
+
+# Exercise 1.11
+
+> Use `slice()` to extract the even-numbered rows in the penguins dataset.
+>
+> It will look something like this:
+>
+> ```         
+> penguins |> 
+> slice("SOME NUMERIC VECTOR GOES HERE")
+> ```
+
+```{r}
+nrow(penguins) 
+penguins |>
+  slice(seq(2, 344, 2))
+```
+
+> Now use `slice()` to extract every third row—i.e., row 3, 6, 9, and so on.
+
+```{r}
+penguins |>
+  slice(seq(3, 344, 3))
+```
+
+# Exercise 1.12
+
+> Use `filter()` to extract the observations in the penguins dataset for which `species == "Gentoo"`, `island == "Biscoe"`, and `body_mass_g` is between 5,000 and 5,500.
+
+```{r}
+penguins |>
+  filter(species == "Gentoo", island == "Biscoe") |>
+  filter(body_mass_g >= 5000, body_mass_g <= 5500)
+```
