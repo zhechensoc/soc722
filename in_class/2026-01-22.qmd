@@ -1,0 +1,174 @@
+---
+title: "2026-01-22"
+author: "Zhe Chen"
+format: html
+editor: visual
+---
+
+`here` package
+
+`gssr` package
+
+load packages
+
+```{r}
+library(here)
+library(tidyverse)
+library(broom)
+library(gssr)
+library(gssrdoc)
+```
+
+get data from NORC one time 
+
+```{r}
+#| eval: false
+gss2024 <- gss_get_yr(2024)
+```
+
+save data one time 
+
+```{r}
+#| eval: false
+saveRDS(gss2024, file = here::here("data", "gss2024.rds"))
+```
+
+```{r}
+readRDS(gss2024, file = here::here("data", "gss2024.rds"))
+glimpse(gss2024)
+```
+
+working data 
+
+```{r}
+data = gss2024 |>
+  select(polviews, sex) |>
+  drop_na() |>
+  haven::zap_labels() # remove variable labels 
+View(data)
+```
+
+search `gssrdoc`: `?polviews`
+
+estimate "model C" -- zero parameter guess
+
+```{r}
+data <- data |>
+  mutate(mod_c_pred = 4,
+         mod_c_err = polviews - mod_c_pred)
+
+sse_c <- sum(data$mod_c_err^2) # SSE for model c
+sse_c
+```
+
+estimate "model A" -- one parameter guess
+
+```{r}
+data <- data |> 
+  mutate(mod_a_pred = mean(polviews),
+         mod_a_err = polviews - mod_a_pred)
+
+sse_a <- sum(data$mod_a_err^2) # SSE for model A
+sse_a
+```
+
+estimate PRE
+
+```{r}
+(sse_c - sse_a) / sse_c
+```
+
+get model C with `lm()`
+
+first make a version of `polviews` centered on 4
+
+```{r}
+data <- data |>
+  mutate(polviews_dev = polviews - 4)
+```
+
+estimate `mod_c`
+
+```{r}
+mod_c <- lm(polviews_dev ~ 0,
+            data = data)
+deviance(mod_c) # confirm as the same as sse_c
+```
+
+estimate `mod_a`
+
+```{r}
+mod_a <- lm(polviews_dev ~ 1, # add the intercept, let it multiplied by "1"
+            data = data)
+deviance(mod_a)
+(deviance(mod_c) - deviance(mod_a)) / deviance(mod_c)
+```      
+
+add a prediction column
+
+```{r}
+data$mod_a_pred <- predict(mod_a)
+data$mod_c_pred <- predict(mod_c)
+```
+
+```{r}
+glance(mod_a) 
+summary(mod_a)
+```
+
+sigma = RMSE
+
+DATA = 0.10673 + ERROR 
+
+conditional predictions 
+
+```{r}
+data2 <- data |>
+  group_by(sex) |>
+  summarize(mean_pv = mean(polviews))
+data2
+```
+
+first good way: make a new variable with meaningful zero
+
+```{r}
+data <- data |>
+  mutate(male = if_else(sex == 1, 1, 0))
+data |> select(sex, male)
+
+model3 <- lm(polviews ~ 1 + male,
+             data = data)
+summary(model3)
+tidy(model3)
+```
+
+another good way: use the factor wrapper 
+
+```{r}
+model3 <- lm(polviews ~ 1 + factor(sex),
+             data = data)
+tidy(model3)
+```
+
+use a `chr` version
+
+```{r}
+data <- data |>
+  mutate(sex_chr = ifelse(sex == 1, "Male", "Female"))
+
+model3 <- lm(polviews ~ 1 + factor(sex_chr),
+             data = data)
+tidy(model3)
+```
+
+compare 1 parameter and 2 parameter models 
+
+```{r}
+deviance(mod_c)
+deviance(mod_a) # just b0
+deviance(model3) # b0 and b1
+
+(deviance(mod_a) - deviance(model3)) / deviance(mod_a)
+```
+
+R-squared is the PRE between the current model and 1-parameter model (only with intercept)
