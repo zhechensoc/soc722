@@ -19,14 +19,14 @@ library(gssr)
 library(gssrdoc)
 ```
 
-get data from NORC one time 
+get data from NORC one time
 
 ```{r}
 #| eval: false
 gss2024 <- gss_get_yr(2024)
 ```
 
-save data one time 
+save data one time
 
 ```{r}
 #| eval: false
@@ -38,7 +38,7 @@ readRDS(gss2024, file = here::here("data", "gss2024.rds"))
 glimpse(gss2024)
 ```
 
-working data 
+working data
 
 ```{r}
 data = gss2024 |>
@@ -102,7 +102,7 @@ mod_a <- lm(polviews_dev ~ 1, # add the intercept, let it multiplied by "1"
             data = data)
 deviance(mod_a)
 (deviance(mod_c) - deviance(mod_a)) / deviance(mod_c)
-```      
+```
 
 add a prediction column
 
@@ -118,9 +118,9 @@ summary(mod_a)
 
 sigma = RMSE
 
-DATA = 0.10673 + ERROR 
+DATA = 0.10673 + ERROR
 
-conditional predictions 
+conditional predictions
 
 ```{r}
 data2 <- data |>
@@ -142,7 +142,7 @@ summary(model3)
 tidy(model3)
 ```
 
-another good way: use the factor wrapper 
+another good way: use the factor wrapper
 
 ```{r}
 model3 <- lm(polviews ~ 1 + factor(sex),
@@ -161,7 +161,7 @@ model3 <- lm(polviews ~ 1 + factor(sex_chr),
 tidy(model3)
 ```
 
-compare 1 parameter and 2 parameter models 
+compare 1 parameter and 2 parameter models
 
 ```{r}
 deviance(mod_c)

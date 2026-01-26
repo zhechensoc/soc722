@@ -1,0 +1,170 @@
+---
+title: "Chapter 2 + 3"
+format: html
+embed-resources: true
+---
+
+Load packages here.
+
+```{r}
+library(gssr)       # you may need to install
+library(gssrdoc)
+library(tidyverse)
+library(broom)
+```
+
+Get data from NORC one time.
+
+```{r}
+#| eval: false
+
+gss2024 <- gss_get_yr(2024)
+```
+
+Save it to my hard drive one time.
+
+```{r}
+#| eval: false
+saveRDS(gss2024, file = here::here("data", "gss2024.rds"))
+```
+
+For the future, load my saved data.
+
+```{r}
+gss2024 <- readRDS(file = here::here("data", "gss2024.rds"))
+```
+
+Working data.
+
+```{r}
+d <- gss2024 |> 
+  select(polviews, sex) |> 
+  drop_na() |> 
+  haven::zap_labels()
+```
+
+Getting R to estimate "model C" (zero parameter guess)
+
+```{r}
+d <- d |> 
+  mutate(mod_c_pred = 4,
+         mod_c_err = polviews - mod_c_pred)
+
+sse_c <- sum(d$mod_c_err^2) # SSE for model C
+sse_c
+
+```
+
+Getting R to estimate "model A" (one parameter estimate)
+
+```{r}
+d <- d |> 
+  mutate(mod_a_pred = mean(polviews),
+         mod_a_err = polviews - mod_a_pred)
+
+sse_a <- sum(d$mod_a_err^2)
+sse_a
+
+```
+
+Estimate PRE.
+
+```{r}
+(sse_c - sse_a) / sse_c
+```
+
+Getting model C with lm(). First let's make a version of polviews "centered" on 4.
+
+```{r}
+d <- d |> 
+  mutate(polviews_dev = polviews - 4)
+```
+
+Now we can do it.
+
+```{r}
+mod_c <- lm(polviews_dev ~ 0, 
+            data = d)
+deviance(mod_c) # confirm this is the same as above
+```
+
+```{r}
+mod_a <- lm(polviews_dev ~ 1,
+            data = d)
+deviance(mod_a)
+
+(deviance(mod_c) - deviance(mod_a)) / deviance(mod_c)
+```
+
+How would I add a prediction to the dataframe.
+
+```{r}
+d$mod_a_pred <- predict(mod_a)
+d$mod_c_pred <- predict(mod_c)
+```
+
+Sigma is the RMSE!
+
+```{r}
+glance(mod_a)
+```
+
+Let's look at this first.
+
+```{r}
+d2 <- d |> 
+  group_by(sex) |> 
+  summarize(mean_pv = mean(polviews))
+
+d2
+```
+
+Let's start with the bad way of conditional predictions. (Doesn't make sense to have sex be coded 1 to 2.)
+
+```{r}
+model3 <- lm(polviews ~ 1 + sex,
+             data = d)
+
+```
+
+First good way is to make a new variable with a meaningful zero.
+
+```{r}
+d <- d |> 
+  mutate(male = if_else(sex == 1, 1, 0))
+
+model3 <- lm(polviews ~ 1 + male,
+             data = d)
+
+tidy(model3)
+```
+
+Another good way is using the factor wrapper.
+
+```{r}
+model3 <- lm(polviews ~ 1 + factor(sex),
+             data = d)
+tidy(model3)
+```
+
+A good way especially for plotting is to have a `chr` version.
+
+```{r}
+d <- d |> 
+  mutate(sex_chr = if_else(sex == 1, "Male", "Female"))
+
+model3 <- lm(polviews ~ 1 + sex_chr,
+             data = d)
+
+tidy(model3)
+```
+
+Compare 1 parameter and 2 parameter models
+
+```{r}
+deviance(mod_a)  # just b0
+deviance(model3) # b0 and b1
+
+(deviance(mod_a) - deviance(model3)) / deviance(mod_a)
+
+```
