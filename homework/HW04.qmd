@@ -1,0 +1,313 @@
+---
+title: "Chapter 4 homework"
+format: html
+embed-resources: true
+author: Zhe Chen
+date: 2026-02-01
+---
+
+```{r}
+#|message: false
+
+library(tidyverse)
+library(broom)
+library(here)
+```
+
+```{r}
+fitness <- read_csv(here("data", "fitness.csv"))
+```
+
+# Homework questions
+
+## 1. Sampling distributions and statistical surprise
+
+Write brief answers.
+
+-   What is a sampling distribution of a statistic (like a mean), and what is it useful for?
+
+Sampling distribution describes the variation of a statistic from repeated sampling from the population. It can be used to evaluate whether an observed value is usual or happens by chance.
+
+-   How can a sampling distribution be used to evaluate whether an observed value is “surprising” under a null hypothesis?
+
+If we observe that value is in the far tail of the sampling distribution, we should reject the null hypothesis. Otherwise, we regard it as unsurprising and cannot reject the null hypothesis.
+
+## 2. Model comparison test: is the mean resting pulse 72?
+
+Using the Fitness data, evaluate whether the sample of participants is consistent with a population mean of `RSTPULSE = 72` using a **model comparison**.
+
+### 2a. Fit Model C and Model A
+
+Use these models:
+
+-   **Model C (null):** the outcome is fixed at 72 with no free parameters\
+    $$Y_i = 72 + \varepsilon_i.$$
+
+-   **Model A (mean model):** estimate the mean from the data\
+    $$Y_i = b_0 + \varepsilon_i.$$
+
+```{r}
+# Model C: fixed mean at 72 (no parameters)
+# Hint: use lm(... ~ 0) with the outcome shifted by 72
+fitness <- janitor::clean_names(fitness)
+  
+fitness <- fitness |>
+  mutate(rstpulse_dev = rstpulse - 72 )
+
+model_c <- lm(rstpulse_dev ~ 0, data = fitness)
+
+# Model A: estimate the mean (intercept-only model)
+model_a <- lm(rstpulse_dev ~ 1, data = fitness)
+```
+
+### 2b. Compute PRE and F
+
+Compute:
+
+$$\text{SSE}(\cdot) = \sum_i e_i^2$$ (use `deviance()` for an `lm` object)
+
+$$\text{PRE} = \frac{\text{SSE}(C) - \text{SSE}(A)}{\text{SSE}(C)}$$
+
+$$F^* = \frac{\text{PRE}/(P_A - P_C)}{(1-\text{PRE})/(n - P_A)}$$
+
+```{r}
+sse_c <- deviance(model_c)
+sse_c
+
+sse_a <- deviance(model_a)
+sse_a
+
+pre <- (sse_c - sse_a) / sse_c
+pre
+
+n <- nrow(fitness)
+n
+
+pc <- 0
+pc
+
+pa <- 1
+pa
+
+f_star <- (pre / (pa - pc)) / ((1 - pre) / (n - pa))
+f_star
+```
+
+### 2c. Identify “surprising” values from the book tables and/or by using `qf()`.
+
+Fill in the quantities the tables depend on:
+
+-   number of participants: n = 31
+-   number of parameters in Model C: $P_C$ = 0
+-   number of parameters in Model A: $P_A$ = 1
+-   new parameters: $P_A - P_C$ = 1
+-   unused parameters (residual df for Model A): $n - P_A$ = 30
+
+Then, using the book tables and/or `qf()`:
+
+```{r}
+# F critical value
+fcrit <- qf(.95, 1, 30)
+fcrit
+
+# PRE critical value 
+precrit <- ((pa - pc) * fcrit) / ((n - pa) + (pa - pc) * fcrit)
+precrit
+```
+
+-   critical PRE at $\alpha = .05$: PREcrit = 0.122
+-   critical F at $\alpha = .05$: Fcrit = 4.17
+
+### 2d. Conclusions
+
+-   Statistical conclusion: Do you reject or retain the null hypothesis at $\alpha = .05$? Explain using the logic of “surprising under the null.”
+
+The observed PRE and F values are much larger than the critical values. They are quite "surprising" under the null hypothesis. So I reject the null hypothesis at $\alpha = 0.05$.
+
+-   Substantive conclusion: Give a one-sentence interpretation in plain language.
+
+Conclusion: The mean resting pulse rate in the sample is significantly lower than 72.
+
+## 3. Alternative F formula using SSR and SSE(A)
+
+Let
+
+$$\text{SSR} = \text{SSE}(C) - \text{SSE}(A)$$
+
+$$F^* = \frac{\text{SSR}/(P_A - P_C)}{\text{SSE}(A)/(n - P_A)}$$
+
+### 3a. Compute F using SSR and SSE(A)
+
+```{r}
+ssr <- sse_c - sse_a
+ssr
+  
+f_star_ssr <- (ssr / (pa - pc)) / (sse_a / (n - pa))
+f_star_ssr                      
+```
+
+### 3b–3e. Interpretation
+
+Write brief answers.
+
+-   What does the numerator $\text{SSR}/(P_A - P_C)$ represent?
+
+The average reduction in error per additional parameter by moving from Model C to Model A.
+
+-   What does the denominator $\text{SSE}(A)/(n - P_A)$ represent?
+
+The average residual error per potential parameter to be added into Model A.
+
+-   What does $F^*$ represent conceptually?
+
+F evaluates if the error reduced by the current model is large enough relative to the remaining error.
+
+-   Compute $t$ for this $F^*$ (use the relationship between $t$ and $F$ when the numerator df is 1).
+
+```{r}
+t_star <- sqrt(f_star)
+t_star
+```
+
+## 4. Does running increase pulse rate?
+
+Using the Fitness dataset, compare `RSTPULSE` (resting pulse) to `RUNPULSE` (post-run pulse).
+
+### 4a. Set up Model C and Model A
+
+Use a model comparison where the null corresponds to **no mean change** from resting to post-run.
+
+One convenient approach:
+
+1.  Create a difference score $D_i = \text{RUNPULSE}_i - \text{RSTPULSE}_i$.
+2.  Compare:
+    -   **Model C:** $D_i = 0 + \varepsilon_i$ (no free parameters)\
+        $$D_i = 0 + \varepsilon_i.$$
+    -   **Model A:** $D_i = b_0 + \varepsilon_i$ (estimate the mean difference)\
+        $$D_i = b_0 + \varepsilon_i.$$
+
+```{r}
+fitness <- fitness |>
+   mutate(d = runpulse - rstpulse)
+
+model_c <- lm(d ~ 0, data = fitness)
+model_a <- lm(d ~ 1, data = fitness)
+```
+
+### 4b. Compute PRE and F, then compare to critical values
+
+```{r}
+sse_c <- deviance(model_c)
+sse_c
+
+sse_a <- deviance(model_a)
+sse_a
+
+pre <- (sse_c - sse_a) / sse_c
+pre
+
+n <- nrow(fitness)
+n
+
+pc <- 0
+pc
+
+pa <- 1
+pa
+
+f_star <- (pre / (pa - pc)) / ((1 - pre) / (n - pa))
+f_star
+```
+
+From the book tables at $\alpha=.05$:
+
+-   PREcrit = 0.122
+-   Fcrit = 4.17
+
+### 4c. Conclusions
+
+-   Statistical conclusion (reject/retain the null).
+
+Given the $F^* = 3475.443 > F_\text{crit} = 4.17$, we should reject the null hypothesis.
+
+-   Substantive conclusion (plain-language interpretation).
+
+Running significantly increases pulse rate.
+
+## 5. With your own data
+
+Return to your own dataset and the model comparison you set up previously. In this section, please use
+
+### 5a. Fit your models
+
+```{r}
+gss2024 <- readRDS(file = here::here("data", "gss2024.rds"))
+
+# variable: satisfied with way democracy works in America
+# 1 = very satisfied, 2 = fairly satisfied, 3 = not very satisfied, 4 = not at all satisfied
+satdemoc <- gss2024 |> 
+  select(satdemoc) |>
+  drop_na() |>
+  haven::zap_labels()
+glimpse(satdemoc)
+
+satdemoc <- satdemoc |>
+   mutate(satdemoc_dev = satdemoc - 2.5)
+
+# null hypothesis : Americans are neutural to the way democracy works on average 
+model_c <- lm(satdemoc_dev ~ 0, data = satdemoc)
+
+model_a <- lm(satdemoc_dev ~ 1, data = satdemoc)
+```
+
+### 5b. Report PRE, F\*, and t\*
+
+```{r}
+sse_c <- deviance(model_c)
+sse_c
+
+sse_a <- deviance(model_a)
+sse_a
+
+pre <- (sse_c - sse_a) / sse_c
+pre
+```
+
+$PRE = 0.0503$
+
+```{r}
+n <- nrow(satdemoc)
+n
+
+pc <- 0
+pc
+
+pa <- 1
+pa
+```
+
+```{r}
+# F_star value
+f_star <- (pre / (pa - pc)) / ((1 - pre) / (n - pa)) 
+f_star
+```
+
+$F^* = 167.4887$
+
+```{r}
+# t_star value
+t_star <- sqrt(f_star)
+t_star
+```
+
+$t^* = 12.94174$
+
+### 5c. Use tables or functions to identify critical values and write conclusions
+
+```{r}
+# F critical value
+fcrit <- qf(.95, 1, 3162)
+fcrit
+```
+
+Given $F^* = 167.4887 > F_\text{crit} = 3.844401$, we should reject the null hypothesis. In conclusion, Americans are significantly unsatisfied with the way democracy works on average.
