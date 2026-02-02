@@ -1,0 +1,226 @@
+---
+title: "Chapter 4"
+format: html
+embed-resources: true
+---
+
+Load packages here.
+
+```{r}
+library(gssr)       # you may need to install
+library(gssrdoc)
+library(tidyverse)
+library(broom)
+theme_set(theme_light())
+```
+
+## Looking back at sampling distributions
+
+Load saved GSS data.
+
+```{r}
+gss2024 <- readRDS(file = here::here("data", "gss2024.rds")) |> 
+  haven::zap_labels()
+```
+
+Get skewed data.
+
+```{r}
+d <- gss2024 |> 
+  select(tvhours) |> 
+  drop_na()
+
+ggplot(d,
+       aes(x = tvhours)) +
+  geom_histogram(bins = 25,
+                 binwidth = 1,
+                 color = "white",
+                 fill = "gray")
+```
+
+Consider this sample a population and take repeated samples from it.
+
+First step is to write a function that grabs a sample and computes the mean.
+
+```{r}
+get_sample_mean <- function(n) {
+  
+  d |> 
+    slice_sample(n = n, replace = TRUE) |> 
+    summarize(m = mean(tvhours)) |> 
+    as.numeric()
+  
+}
+```
+
+Now I like to make a simulation "skeleton" that I can plug results into.
+
+```{r}
+sims <- tibble(
+  sim_number = 1:1000
+)
+
+```
+
+Now I add the sampled means to the skeleton.
+
+```{r}
+sims <- sims |> 
+  rowwise() |> # do separately by row
+  mutate(m = get_sample_mean(n = 2152)) # vary the N
+```
+
+Now I can plot the results.
+
+```{r}
+ggplot(sims,
+       aes(x = m)) +
+  geom_histogram(bins = 25,
+                 binwidth = .5,          # tweak as needed for different N
+                 color = "white",
+                 fill = "lightgray",
+                 aes(y = after_stat(density))) +
+  geom_density(color = "red")
+```
+
+## PRE and the F-Test
+
+Null hypothesis and null distribution.
+
+Null hypothesis: the average American adult in 2024 watches 3 hours of "TV" per day.
+
+```{r}
+d <- d |> 
+  mutate(tvdev = tvhours - 3)
+
+ggplot(d,
+       aes(x = tvdev)) +
+  geom_histogram(bins = 25,
+                 binwidth = 1,
+                 color = "white",
+                 fill = "gray") +
+  scale_x_continuous(breaks = seq(-3, 21, 3))
+
+m0 <- lm(tvdev ~ 0, data = d)
+m1 <- lm(tvdev ~ 1, data = d)
+
+sse0 <- deviance(m0)
+sse1 <- deviance(m1)
+
+observed_pre <- (sse0 - sse1) / sse0
+observed_pre
+
+```
+
+A quick example.
+
+```{r}
+fake_data <- tibble(tvhours = rnorm(2152, mean = 3, sd = 3.3))
+
+fake_data <- fake_data |> 
+  mutate(tvdev = tvhours - 3)
+
+m0 <- lm(tvdev ~ 0, data = fake_data)
+m1 <- lm(tvdev ~ 1, data = fake_data)
+
+sse0 <- deviance(m0)
+sse1 <- deviance(m1)
+
+(sse0 - sse1) / sse0
+```
+
+Convert this to a function.
+
+```{r}
+calc_null_pre <- function() {
+  
+  null_data <- tibble(tvdev = rnorm(2152, 0, 3.3))
+  
+  m0 <- lm(tvdev ~ 0, data = null_data)
+  m1 <- lm(tvdev ~ 1, data = null_data) 
+  
+  pre <- (deviance(m0) - deviance(m1)) / deviance(m0)
+  
+  return(pre)
+  
+}
+```
+
+Create a skeleton and append the null PRE simulations.
+
+```{r}
+null_sims <- tibble(sim_number = 1:1000) |> 
+  rowwise() |> 
+  mutate(pre = calc_null_pre())
+```
+
+Show how the OBSERVED PRE compares to the distribution of NULL PREs.
+
+```{r}
+ggplot(null_sims,
+       aes(x = pre)) +
+  geom_histogram() +
+  geom_vline(xintercept = observed_pre,
+             linetype = "dashed",
+             color = "red")
+
+quantile(null_sims$pre, c(.95, .99, 1)) # observed is WAY above what we'd expect by chance...
+```
+
+Based on the formula in the book, what F would that be equivalent to?
+
+```{r}
+fstat <- (observed_pre / 1) / ((1 - observed_pre) / (nrow(d) - 1))
+fstat
+```
+
+F-distribution with one numerator df and 2151 denom df.
+
+```{r}
+df1 <- 1
+df2 <- 2151
+alpha <- .01
+
+#f_obs  <- fstat                      # set to a number to draw it
+f_crit <- qf(1 - alpha, df1, df2)
+x_max  <- qf(0.999, df1, df2)
+
+ggplot(data.frame(x = c(0, x_max)),     # to set the range
+       aes(x)) +
+  stat_function(fun = df, 
+                args = list(df1 = df1, df2 = df2), 
+                linewidth = 1) +
+  # shade right tail
+  stat_function(
+    fun = df,
+    args = list(df1 = df1, df2 = df2),
+    geom = "area",
+    xlim = c(f_crit, x_max),
+    alpha = 0.25
+  ) +
+  geom_vline(xintercept = f_crit, linetype = "dashed") +
+  #geom_vline(xintercept = f_obs, linewidth = 1) +
+  labs(
+    title = sprintf("F distribution: F(%d, %d)", df1, df2),
+    x = "F",
+    y = "Density"
+  ) +
+  theme_minimal()
+
+
+```
+
+
+You can get F* (the critical value) from the book. Or we can do it using functions in R. Remember that there is nothing sacred about 95% or 99% or any of that...
+
+```{r}
+qf(.99, 1, 2151)
+```
+
+You can get the p-value
+```{r}
+1 - pf(fstat, 1, 2151)
+```
+
+
+

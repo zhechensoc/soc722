@@ -1,0 +1,93 @@
+---
+title: "In Class 2026-01-27"
+author: "Zhe Chen"
+format: html
+editor: visual
+---
+
+```{r}
+library(gssr)
+library(gssrdoc)
+library(tidyverse)
+library(broom)
+theme_set(theme_minimal())
+```
+
+
+
+
+
+
+```{r}
+gss2024 <- readRDS(file = here::here("data", "gss2024.rds"))
+d <- gss2024 |> 
+  select(tvhours) |> 
+  drop_na() |> 
+  haven::zap_labels()
+```
+
+
+
+
+
+
+
+## PRE
+
+Null hypothesis: the average of tvhours is 3 
+
+```{r}
+d <- d |>
+  mutate(tvdev = tvhours - 3)
+
+ggplot(d,
+       aes(x = tvdev)) + 
+  geom_histogram()
+
+# residual = sd of e 
+
+m0 <- lm(tvdev ~ 0, data = d)
+m1 <- lm(tvdev ~ 1, data = d)
+
+sse0 <- deviance(m0)
+sse1 <- deviance(m1)
+
+(sse0 - sse1) / sse0
+```
+
+Construct a normal distribution 
+
+use `rnorm` to generate a random distribution 
+
+```{r}
+fake_data <- tibble(tvhours = rnorm(2152,
+                                    mean = 3,
+                                    sd = 3.3))
+mean(fake_data$tvhours)
+
+fake_data <- fake_data |>
+  mutate(tvdev = tvhours - 3)
+
+m0 <- lm(tvdev ~ 0, data = fake_data)
+m1 <- lm(tvdev ~ 1, data = fake_data)
+
+sse0 <- deviance(m0)
+sse1 <- deviance(m1)
+
+(sse0 - sse1) / sse0 # PRE of an "accidental model"
+```
+
+bootstrap sample: same n as sample 
+
+Convert this into a function 
+
+```{r}
+calc_null_pre <- function() {
+  null_data <- tibble()
+}
+```
+
+F-statistic 
+```{r}
+fstat <- (observed_pre / 1) / ((1 - observed_pre) / (nrow(d) - 1))
+```
