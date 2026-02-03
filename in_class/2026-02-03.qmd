@@ -1,0 +1,41 @@
+---
+title: "In Class 2026-02-03"
+format: html
+editor: visual
+---
+
+function of getting PRE from F
+
+```{r}
+#  df1 = pa - pc
+#  df2 <- n - pa
+
+qpre <- function(p, df1, df2) {
+  
+  f <- qf(p = p,
+          df1 = df1,
+          df2 = df2)
+  
+  crit_pre <- f / (f + df2/df1)
+  
+  return(crit_pre)
+}
+
+qpre(p = 0.95, df1 = 1, df2 = 99)
+```
+
+```{r}
+library(gssr)
+library(gssrdoc)
+library(tidyverse)
+library(broom)
+theme_set(theme_light())
+```
+
+Get GSS panel data 
+
+```{r}
+#| eval: false
+data("gss_panel10_long")
+saveRDS(gss_panel10_long, file = here::here("data", "gss_panel10_long.rds"))
+```
