@@ -1,0 +1,102 @@
+---
+title: "Chapter 5"
+format: html
+embed-resources: true
+---
+
+Load packages here.
+
+```{r}
+library(gssr)
+library(gssrdoc)
+library(tidyverse)
+library(broom)
+theme_set(theme_light())
+```
+
+Get GSS panel data the first time (then comment out).
+
+```{r}
+#| eval: false
+data("gss_panel10_long")
+saveRDS(gss_panel10_long, file = here::here("data", "gss_panel10_long.rds"))
+```
+
+Load saved GSS data.
+
+```{r}
+gss_panel10_long <- read_rds(here::here("data", "gss_panel10_long.rds"))
+```
+
+Get what we need.
+
+```{r}
+d <- gss_panel10_long |> 
+  select(firstid, wave, y = tvhours) |> 
+  filter(wave %in% c(1, 3)) |> 
+  drop_na() |>
+  mutate(y = as.numeric(y)) |> 
+  mutate(num_obs = n(), .by = firstid) |> 
+  filter(num_obs == 2) |> 
+  select(-num_obs) |> 
+  pivot_wider(id_cols = firstid,
+              names_prefix = "y",
+              names_from = wave,
+              values_from = y) |> 
+  mutate(ydiff = y3 - y1)
+
+tinyplot::plt(~ ydiff, data = d, type = "density")
+lm(ydiff ~ 1, data = d) |> summary()
+
+sse0 <- deviance(lm(ydiff ~ 0, data = d))
+sse1 <- deviance(lm(ydiff ~ 1, data = d))
+(sse0-sse1) / sse0 # very low!!!
+
+```
+
+```{r}
+groups <- 2
+within_var <- var(d$y1) # estimate
+between_var <- var(c(0, 1)) * ((groups - 1) / groups)  # population
+
+power.anova.test(groups = groups,
+                 between.var = between_var,
+                 within.var = within_var,
+                 sig.level = .01,
+                 power = .8)
+```
+
+```{r}
+get_pow <- function(n) {
+  tmp <- power.anova.test(groups = groups,
+                          between.var = between_var,
+                          within.var = within_var,
+                          sig.level = .01,
+                          n = n)
+  return(tmp$power)
+}
+
+power_sims <- tibble(n = seq(from = 10, 
+                             to = 1000, 
+                             by = 10))
+
+power_sims <- power_sims |> 
+  rowwise() |> 
+  mutate(power = get_pow(n))
+```
+
+Fooling around with tinyplot.
+
+```{r}
+library(tinyplot)
+tinytheme("tufte")
+
+plt(power ~ n,
+    data = power_sims,
+    type = "l")
+
+```
+
+## Effect sizes
+
+## Confidence intervals
