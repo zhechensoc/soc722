@@ -181,7 +181,7 @@ df1 <- 1
 df2 <- 2151
 alpha <- .01
 
-#f_obs  <- fstat                      # set to a number to draw it
+f_obs  <- fstat                      # set to a number to draw it
 f_crit <- qf(1 - alpha, df1, df2)
 x_max  <- qf(0.999, df1, df2)
 
@@ -199,7 +199,7 @@ ggplot(data.frame(x = c(0, x_max)),     # to set the range
     alpha = 0.25
   ) +
   geom_vline(xintercept = f_crit, linetype = "dashed") +
-  #geom_vline(xintercept = f_obs, linewidth = 1) +
+  geom_vline(xintercept = f_obs, linewidth = 1) +
   labs(
     title = sprintf("F distribution: F(%d, %d)", df1, df2),
     x = "F",
@@ -210,17 +210,14 @@ ggplot(data.frame(x = c(0, x_max)),     # to set the range
 
 ```
 
-
-You can get F* (the critical value) from the book. Or we can do it using functions in R. Remember that there is nothing sacred about 95% or 99% or any of that...
+You can get F\* (the critical value) from the book. Or we can do it using functions in R. Remember that there is nothing sacred about 95% or 99% or any of that...
 
 ```{r}
 qf(.99, 1, 2151)
 ```
 
 You can get the p-value
+
 ```{r}
 1 - pf(fstat, 1, 2151)
 ```
-
-
-
