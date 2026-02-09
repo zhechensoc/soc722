@@ -1,0 +1,933 @@
+---
+title: "Chapter 5 homework"
+format:
+  html:
+    embed-resources: true
+author: Zhe Chen
+date: 2026-02-08
+---
+
+## Setup
+
+```{r}
+# If you don't have a package yet, install it once:
+# install.packages(c("tidyverse", "here", "broom", "pwr", "psych"))
+
+library(tidyverse)
+library(here)
+library(broom)
+library(pwr)
+library(psych)
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+## General notes on the model-comparison workflow
+
+For most questions below, you will compare:
+
+-   **Model C (constrained / null model)**: a model where the intercept is fixed (often to 0 or to a known/reference value).
+-   **Model A (augmented model)**: a model where the intercept is estimated from the data.
+
+For a one-parameter intercept-only Model A,
+
+$$
+\text{Model A: } Y_i = b_0 + \varepsilon_i
+$$
+
+and for a fixed-intercept Model C (often $b_0$ fixed to some value $c$),
+
+$$
+\text{Model C: } Y_i = c + \varepsilon_i.
+$$
+
+The key quantities:
+
+-   $\mathrm{SSE}$ is sum of squared errors.
+-   $\mathrm{PRE} = \dfrac{\mathrm{SSE}_C - \mathrm{SSE}_A}{\mathrm{SSE}_C}$.
+-   For a one-parameter comparison (typically $P_A - P_C = 1$), the usual model-comparison $F$ statistic is:
+
+$$
+F = \frac{(\mathrm{SSE}_C - \mathrm{SSE}_A)/(P_A - P_C)}{\mathrm{SSE}_A/(n - P_A)}.
+$$
+
+------------------------------------------------------------------------
+
+# Part A: Hand-calculation practice (small, self-contained datasets)
+
+## A1. Schizophrenia age of onset
+
+Assume the mean age of onset of schizophrenia in a sample of $n=50$ persons was $\bar{y} = 21.5$ years and the variance was $s^2 = 2.5$ (years$^2$).
+
+1.  Specify the model that uses the mean to describe the data (Model A), in both words and in equation form.
+
+Model A: The mean age of onset of schizophrenia in a sample is $b_0$.
+
+$$
+\text{Model A: } Age_i = b_0 + \varepsilon_i\
+$$
+
+1.  What is the $\mathrm{SSE}$ for this model?
+
+*(Use the definitional relationships between variance, sums of squares, and SSE for an intercept-only model.)*
+
+```{r}
+# variance s^2 = MSE = SSE / (n - 1)
+# SSE = (n - 1) * s^2
+SSE <- (50 - 1) * 2.5
+SSE
+```
+
+------------------------------------------------------------------------
+
+## A2. Multiculturalism vs. colorblindness (paired data)
+
+Ryan, Hunt, Weible, Peterson, and Casas (2007) investigated Americans’ interethnic ideologies. They asked college students to indicate the extent to which they believed that multiculturalism and colorblind ideologies would improve interethnic relations in the U.S.
+
+Assume you have data for 10 Black participants:
+
+| Subjid |  MC |  CB | Diff (MC − CB) |
+|-------:|----:|----:|---------------:|
+|      1 | 5.0 | 4.0 |            1.0 |
+|      2 | 4.0 | 3.5 |            0.5 |
+|      3 | 6.0 | 4.0 |            2.0 |
+|      4 | 6.0 | 6.0 |            0.0 |
+|      5 | 5.0 | 4.5 |            0.5 |
+|      6 | 4.5 | 5.0 |           -0.5 |
+|      7 | 5.0 | 3.0 |            2.0 |
+|      8 | 6.5 | 4.5 |            2.0 |
+|      9 | 7.0 | 5.0 |            2.0 |
+|     10 | 6.5 | 3.0 |            3.5 |
+
+### A2a. By hand
+
+1.  Compute **by hand** the mean, variance, and standard deviation of the difference variable. Use definitional formulas.
+
+```{r}
+# mean = 1.3
+# check
+mean_diff <- (1 + 0.5 + 2.0 + 0 + 0.5 - 0.5 + 2.0 + 2.0 + 2.0 + 3.5) / 10
+mean_diff
+
+# variance = 1.46 
+# check
+var_diff <- (
+  (1 - 1.3)^2 + (0.5 - 1.3)^2 + (2.0 - 1.3)^2 + (0 - 1.3)^2 
+  + (0.5 - 1.3)^2 + (-0.5 - 1.3)^2 + (2.0 - 1.3)^2 + (2.0 - 1.3)^2 
+  + (2.0 - 1.3)^2 + (3.5 - 1.3)^2
+  ) / (10 - 1)
+var_diff
+
+# standard deviation = 1.21
+# check
+sd_diff <- sqrt(var_diff)
+sd_diff
+```
+
+2.  Compute $\mathrm{SSE}_C$ for the simple model that predicts no difference (i.e., that the difference is 0). This is Model C.
+
+```{r}
+# SSE_C = 30
+# check
+sse_c <- (1 - 0)^2 + (0.5 - 0)^2 + (2.0 - 0)^2 + (0 - 0)^2 + (0.5 - 0)^2 + 
+  (-0.5 - 0)^2 + (2.0 - 0)^2 + (2.0 - 0)^2 + (2.0 - 0)^2 + (3.5 - 0)^2
+sse_c
+```
+
+3.  Compute $\mathrm{SSE}_A$ for the simple model that best describes the differences based on the data (Model A).
+
+```{r}
+# SSE_A = 13.1
+# check
+sse_a <- (1 - 1.3)^2 + (0.5 - 1.3)^2 + (2.0 - 1.3)^2 + (0 - 1.3)^2 + (0.5 - 1.3)^2 + 
+  (-0.5 - 1.3)^2 + (2.0 - 1.3)^2 + (2.0 - 1.3)^2 + (2.0 - 1.3)^2 + (3.5 - 1.3)^2
+sse_a
+```
+
+4.  Compute PRE and $F$.
+
+```{r}
+# PRE = 0.56
+# check
+pre <- (sse_c - sse_a) / sse_c
+pre
+
+# F = 11.61
+# check
+f <- (pre / 1) / ((1 - pre)/(10 - 1))
+f
+```
+
+5.  Specify the null hypothesis tested by comparing these two models.
+
+Null Hypothesis: There is no difference between multiculturalism and colorblind.
+
+$$
+\text{Model C: } Diff_i = 0 + \varepsilon_i\
+$$
+
+6.  Indicate whether you would reject or fail to reject Model C / the null hypothesis.
+
+When $\alpha = 0.05, n - PA = 9$, the critical $PRE$ is 0.362 and the critical $F$ is 5.12. So I reject the Model C / the null hypothesis.
+
+7.  Write up your findings in journal style.
+
+The result indicates that the difference between multiculturalism and colorblind ideologies is significant at the 5% level. Therefore, Black college students have different beliefs in multiculturalism and colorblind ideologies on average.
+
+*(You can optionally use R at the end to check arithmetic, but do the main work by hand.)*
+
+### A2b. In R (reproducing your values)
+
+Recreate the analysis in R and verify the quantities above (mean, variance/SD, $\mathrm{SSE}_C$, $\mathrm{SSE}_A$, PRE, $F$, and $p$).
+
+```{r}
+diff <- c(1, 0.5, 2.0, 0, 0.5, -0.5, 2.0, 2.0, 2.0, 3.5)
+
+# mean
+mean(diff)
+
+# variance
+var(diff)
+
+# standard deviation 
+sd(diff)
+
+# SSE_C
+sum((diff - 0)^2)
+
+# SSE_A
+sum((diff - mean(diff))^2)
+
+# PRE
+(sum((diff - 0)^2) - sum((diff - mean(diff))^2))/sum((diff - 0)^2)
+
+# F
+f <- ((sum((diff - 0)^2) - sum((diff - mean(diff))^2))/sum((diff - 0)^2) / 1) / ((1 - (sum((diff - 0)^2) - sum((diff - mean(diff))^2))/sum((diff - 0)^2))/(10 - 1))
+f
+
+# p
+pf(f, 1, 9)
+```
+
+### A2c. Confidence interval
+
+Construct a 95% confidence interval for the multiculturalism − colorblindness difference score in this sample.
+
+```{r}
+# crital F
+f_crit <- qf(0.95, 1, 9)
+f_crit
+
+# right boundary = b0 + sqrt(f_crit*MSE/n)
+conf_right <- mean(diff) + sqrt(f_crit*var(diff)/10)
+conf_right
+
+# left boundary = b0 - sqrt(f_crit*MSE/n)
+conf_left <- mean(diff) - sqrt(f_crit*var(diff)/10)
+conf_left
+```
+
+### A2d. Power planning with `pwr`
+
+A researcher wants to replicate the finding with a new sample of 10 participants.
+
+1.  Use results from this sample and the `pwr` package to estimate the number of participants needed to replicate your observed effect (at $\alpha = .05$).
+
+```{r}
+# Cohen's d
+d <- mean(diff) / sd(diff)
+d
+
+# number of participants needed, at alpha = 0.05, power = 0.80
+pwr.t.test(d = d, power = 0.80, sig.level = 0.05)
+```
+
+The required number ($\alpha$ = 0.05, power = 0.80) is at least 15.
+
+2.  Use the same package to estimate the number of participants needed to detect a **medium** effect size (according to Cohen's very arbitrary definition...).
+
+```{r}
+# "medium" effect size = 0.5
+cohen.ES(test = "t", size = "medium")
+
+# number of participants needed, at alpha = 0.05, power = 0.80
+pwr.t.test(d = 0.5, power = 0.80, sig.level = 0.05)
+```
+
+The required number ($\alpha$ = 0.05, power = 0.80) is at least 64.
+
+------------------------------------------------------------------------
+
+## A3. Gym BMI (one-sample mean test)
+
+A researcher wonders whether people who go to the gym in January have above-normal BMIs, that is, above 24.9 (upper level of “normal,” according to the CDC). She obtains the BMI scores below for a randomly selected group of 10 gym users:
+
+| Participant |  BMI |
+|------------:|-----:|
+|           1 | 24.0 |
+|           2 | 27.0 |
+|           3 | 25.0 |
+|           4 | 27.0 |
+|           5 | 27.0 |
+|           6 | 23.0 |
+|           7 | 22.0 |
+|           8 | 30.0 |
+|           9 | 26.0 |
+|          10 | 29.0 |
+
+1.  Specify Models C and A and the null hypothesis for this statistical test. What is this test commonly called?
+
+$$ 
+\text{Model C: } BMI_i = 24.9 + \varepsilon_i
+$$ Model C predicts BMI as 24.9.
+
+$$ 
+\text{Model A: } BMI_i = b_0 + \varepsilon_i
+$$ Model A predicts BMI as $b_0$.
+
+Null Hypothesis: The average of BMI scores of this group is 24.9.
+
+The test is commonly called as one-sample mean test.
+
+2.  Conduct the analysis **by hand**.
+
+```{r}
+# mean = 26
+# check
+mean <- (24.0 + 27.0 + 25.0 + 27.0 + 27.0 + 23.0 + 22.0 + 30.0 + 26.0 + 29.0)/10
+mean                
+                
+# variance = 6.44
+# check
+var <- ((24 - 26)^2 + (27 - 26)^2 + (25 - 26)^2 + (27 - 26)^2 + 
+               (27 - 26)^2 + (23 - 26)^2 + (22 - 26)^2 + (30 - 26)^ 2 +
+               (26 - 26)^2 + (29 - 26)^2) / (10 - 1)
+var
+
+# standard deviation = 2.54
+sd <- sqrt(var)
+sd
+
+# MODEL C: Yi = 24.9 + ei
+# SSE_C = 70.1
+# check
+sse_c <- (24 - 24.9)^2 + (27 - 24.9)^2 + (25 - 24.9)^2 + (27 - 24.9)^2 + 
+            (27 - 24.9)^2 + (23 - 24.9)^2 + (22 - 24.9)^2 + (30 - 24.9)^2 + 
+            (26 - 24.9)^2 + (29 - 24.9)^2 
+sse_c
+
+# MODEL A: Yi = b0 + ei
+# SSE_A = 58
+# check
+sse_a <- (24 - 26)^2 + (27 - 26)^2 + (25 - 26)^2 + (27 - 26)^2 + 
+            (27 - 26)^2 + (23 - 26)^2 + (22 - 26)^2 + (30 - 26)^2 + 
+            (26 - 26)^2 + (29 - 26)^2 
+sse_a
+
+# PRE = 0.17
+# check
+pre <- (sse_c - sse_a) / sse_c
+pre
+
+# F = 1.87
+# check
+f <- (pre / 1) / ((1 - pre) / (10 - 1))
+f
+```
+
+3.  Conduct the analysis in R.
+
+```{r}
+bmi <- c(24.0, 27.0, 25.0, 27.0, 27.0, 23.0, 22.0, 30.0, 26.0, 29.0)
+bmi
+
+# mean
+mean(bmi)              
+                
+# variance 
+var(bmi)
+
+# standard deviation 
+sd(bmi)
+
+# SSE_C
+sse_c <- sum((bmi - 24.9)^2)
+sse_c
+
+# SSE_A 
+sse_a <- sum((bmi - mean(bmi))^2)
+sse_a
+
+# PRE
+pre <- (sse_c - sse_a) / sse_c
+pre
+
+# F 
+f <- (pre / 1) / ((1 - pre) / (10 - 1))
+f
+
+# F_critic (alpha = 0.05)
+f_crit <- qf(0.95, 1, 9)
+f_crit
+```
+
+4.  Provide a statistical conclusion.
+
+Given that $F^* = 1.88 < F_\text{crit} = 5.12$, we cannot reject the null hypothesis at the 5% level.
+
+5.  Write up your findings in journal style.
+
+At the 5% significance level, the BMIs among people who go to the gym in January are not significantly above than normal levels on average.
+
+------------------------------------------------------------------------
+
+# Part B: Fitness dataset (model comparison, confidence intervals, power)
+
+## B0. Read the data
+
+Read in the `fitness.csv` dataset from the course project `data/` folder.
+
+```{r}
+fitness <- read_csv(here("data", "fitness.csv"))
+```
+
+------------------------------------------------------------------------
+
+## B1. Resting pulse vs. “normal” (72 bpm)
+
+The variable `RSTPULSE` contains resting pulse rate for each participant in the fitness study. The normal pulse rate for men is 72.
+
+### B1a. 95% CI for $b_0$ in Model A
+
+Construct a 95% confidence interval for $b_0$ in Model A.
+
+-   Do this **by hand** using a critical value (e.g., $t_{\alpha/2, \, df}$), and then confirm with R.
+-   Make note of what in R output corresponds to your hand calculation.
+
+For reference, the by-hand CI for an intercept estimate is:
+
+$$
+\hat{b}_0 \pm t_{\alpha/2, \, df} \cdot SE(\hat{b}_0).
+$$
+
+```{r}
+# b_0 = 53.74
+# check 
+mean(fitness$RSTPULSE)
+
+# t_crit = 2.04
+t_crit <- qt(0.975, 30)
+t_crit
+
+# se = 1.49
+# check 
+se <- sd(fitness$RSTPULSE)/(sqrt(31))
+se
+
+# left boundary = b_0 - t_crit*se = 50.70
+# check 
+mean(fitness$RSTPULSE) - t_crit*se
+
+# right boundary = b_0 + t_crit*se = 56.78
+# check 
+mean(fitness$RSTPULSE) + t_crit*se
+```
+
+### B1b. Journal-style summary
+
+Write a complete summary:
+
+1.  briefly explain the data;
+2.  set up the analysis (describe the comparison without using “Model A/C” language if you prefer);
+3.  report mean (and SD), test statistic ($t$ or $F$), PRE, $p$, and the confidence interval; and
+4.  state statistical and substantive conclusions.
+
+```{r}
+# mean
+mean <- mean(fitness$RSTPULSE)
+mean
+
+# sd
+sd <- sd(fitness$RSTPULSE)
+sd
+
+# pre
+sse_c <- sum((fitness$RSTPULSE - 72)^2)
+sse_c
+sse_a <- sum((fitness$RSTPULSE - 53.74)^2)
+sse_a
+pre <- (sse_c - sse_a) / sse_c
+pre
+
+# f
+f <- (pre / 1) / ((1 - pre) / (31 -1))
+f
+
+# f_critic, alpha = 0.05
+f_crit <- qf(0.95, 1, 30)
+f_crit
+
+# p value 
+p <- pf(150, 1, 30, lower.tail = FALSE)
+p
+
+# t_critic, alpha = 0.05
+t_critic <- qt(0.975, 30)
+t_critic
+
+# left boundary, alpha = 0.05
+mean - t_critic*(sd / sqrt(31))
+
+# right boundary, alpha = 0.05
+mean + t_critic*(sd / sqrt(31))
+```
+
+This dataset describes the resting pulse rate among 31 participants in the fitness study. The normal pulse rate for men is 72, and we want to test whether the resting pulse among participants in this study is normal. In this dataset, the mean of resting pulse rate is 53.74, with a standard deviation of 8.29. When predicting resting pulse rate as the mean value, the proportional reduction of error (PRE) is 0.83 and the F-statistic is 150.21, and the 95% confidence internal is (50.70, 56.78). At the 5% significance level, the observed F-statistic is larger than the critical value of F which is 4.17. In other words, the probability of the observed data given that the null hypothesis is true is almost 0%. Therefore, we should reject the null hypothesis. We conclude that the resting pulse among participants in this study is not normal.
+
+### B1c. Estimate of true PRE
+
+If you wanted to replicate this study, what would be your best guess for the *true* value of PRE?
+
+```{r}
+# pre
+sse_c <- sum((fitness$RSTPULSE - 72)^2)
+sse_c
+sse_a <- sum((fitness$RSTPULSE - 53.74)^2)
+sse_a
+pre <- (sse_c - sse_a) / sse_c
+pre
+```
+
+My best guess for the true value of PRE is 0.83.
+
+### B1d. Power for a replication at the same $n$
+
+Given your estimate of true PRE, if you replicated with the same sample size, what would be your power to detect the effect? Use `pwr.f2.test()`.
+
+A common translation between PRE and Cohen's $f^2$ for this model-comparison setup is:
+
+$$
+f^2 = \frac{\mathrm{PRE}}{1-\mathrm{PRE}}.
+$$
+
+```{r}
+f2 <- pre / (1 - pre)
+f2
+
+pwr.f2.test(1, 30, f2 = f2, sig.level = 0.05)
+```
+
+The power is 100%.
+
+------------------------------------------------------------------------
+
+## B2. Did running increase pulse rate? (within-person change)
+
+Using the same dataset, compare resting pulse (`RSTPULSE`) to post-run pulse (`RUNPULSE`). Did running increase pulse rate?
+
+Hint: create a new variable such as:
+
+$$
+\text{change} = \text{RUNPULSE} - \text{RSTPULSE}.
+$$
+
+```{r}
+fitness <- fitness |>
+  mutate(change = RUNPULSE - RSTPULSE)
+
+# SSE_C
+sse_c <- deviance(lm(change ~ 0, data = fitness))
+sse_c
+
+# SSE_A
+sse_a <- deviance(lm(change ~ 1, data = fitness))
+sse_a
+
+# PRE
+pre <- (sse_c - sse_a) / sse_c
+pre
+
+# F
+f <- (pre / 1) / ((1 - pre) / (31 - 1))
+f
+
+# F_critic
+f_crit <- qf(0.95, 1, 30)
+f_crit
+
+# t_critic
+t_crit <- qt(0.975, 30)
+t_crit
+```
+
+Given that $F^* = 3475.443 > F_\text{crit} = 4.17$. We should reject the null hypothesis and conclude that running increased pulse rate.
+
+### B2a. 95% CI for $b_0$ in Model A
+
+Construct a 95% CI for $b_0$ in your Model A for the change score. Do it by hand, then confirm with R.
+
+```{r}
+# mean = 115.90
+# check 
+mean <- mean(fitness$change)
+mean 
+
+# se = 1.97
+# check 
+se <- sd(fitness$change) / sqrt(31)
+se
+
+# left boundary = 111.89
+# check 
+mean(fitness$change) - t_crit*se
+
+# right boundary = 119.92
+# check 
+mean(fitness$change) + t_crit*se
+
+# check with t.test
+t.test(fitness$change, conf.level = 0.95)
+```
+
+### B2b. Estimate of true PRE
+
+If you wanted to replicate this study, what would be your best guess for the true value of PRE?
+
+```{r}
+pre <- (sse_c - sse_a) / sse_c
+pre
+```
+
+My best guess for the true value of PRE is 0.99.
+
+### B2c. Required effect size for power = .80 at n = 100
+
+How big would true PRE need to be to yield power = .80 in a future study with $n=100$ participants? Use `pwr.f2.test()`.
+
+```{r}
+pwr.f2.test(1, 99, sig.level = 0.05, power = 0.80)
+
+# f2 = 0.07925829
+f2 <- 0.07925829
+pre_need <- f2 / (f2 + 1)
+pre_need
+```
+
+To yield power = 0.80, the true PRE need to be 0.07.
+
+------------------------------------------------------------------------
+
+## B3. Oral contraceptives and systolic blood pressure (Rosner example)
+
+Ten women are studied to determine if oral contraceptives increase systolic blood pressure (mm Hg). Baseline blood pressure is measured before and then again several months after oral contraceptives are started. The following **changes** in systolic blood pressure are observed:
+
+13, 3, -1, 9, 7, 7, 6, 4, -2, 2
+
+A summary table (from SAS) reports:
+
+|      Mean |   Std Dev |         USS |         CSS |         T | Prob \> |
+|----------:|----------:|------------:|------------:|----------:|--------:|
+| 4.8000000 | 4.5655716 | 418.0000000 | 187.6000000 | 3.3246511 |  0.0089 |
+
+Here, **USS** (“uncorrected sum of squares”) represents squared error around the model $Y_i = 0 + \varepsilon_i$ (i.e., Model C with intercept fixed at 0). **CSS** (“corrected sums of squares”) represents squared error around $Y_i = b_0 + \varepsilon_i$ (Model A with estimated intercept).
+
+### B3a. Interpret the output using model comparison
+
+Use this output to determine whether blood pressure significantly increased after oral contraceptives were begun.
+
+1.  Specify Models A & C (equations are encouraged).
+
+Model C estimates change in blood pressure change as 0.
+
+$$
+\text{Model C: } Change_i = 0 + \varepsilon_i
+$$ Model C estimates change in blood pressure change as $b_0$.
+
+$$
+\text{Model A: } Change_i = b_0 + \varepsilon_i
+$$
+
+2.  Specify the null hypothesis.
+
+Null hypothesis: The average change in blood pressure is 0.
+
+$$
+H_0: b_0 = 0
+$$
+
+3.  Calculate PRE and $F$.
+
+```{r}
+# pre
+sse_c <- 418.0
+sse_a <- 187.6
+pre <- (sse_c - sse_a) / sse_c 
+pre
+
+# F 
+f <- (pre / 1) / ((1 - pre) / (10 - 1))
+f
+```
+
+4.  State your statistical and substantive one-sentence conclusions.
+
+```{r}
+# F_critical
+qf(0.95, 1, 9)
+```
+
+Given that $F^* > F_\text{crit}$, we should reject the null hypothesis, thus the average change in blood pressure is not 0.
+
+### B3b. Estimate of true PRE
+
+If you wanted to replicate this study, what would be your best guess for the true value of PRE?
+
+```{r}
+pre
+```
+
+My best guess the true value of PRE is 0.55.
+
+### B3c. Sample size for power targets
+
+What sample size would you need to achieve power = .80? What sample size would you need to achieve power = .90? Use `pwr.f2.test()`.
+
+```{r}
+f2 <- pre / (1 - pre)
+
+# power = .80
+pwr.f2.test(1, f2 = f2, sig.level = .05, power = .80)
+
+# power = .90
+pwr.f2.test(1, f2 = f2, sig.level = .05, power = .90)
+```
+
+When $power = .80$, the sample size needs to be at least 8. When $power = .90$, the sample size needs to be at least 10.
+
+------------------------------------------------------------------------
+
+## B4. Power and design choices (GPA example)
+
+In a particular year, a graduate program admitted 24 new students. The admissions committee wants to interpret the students’ first-year GPA.
+
+### B4a. Approximate power for a “moderate” effect
+
+Graduate students in this program are required to maintain a 3.0 average. The committee plans to compare:
+
+-   Model C: GPA fixed at 3.0
+-   Model A: GPA estimated as the students’ mean
+
+If the true difference corresponds to what the text refers to as a “moderate” effect in the social sciences, what are the chances that the committee will correctly conclude Model A is better than Model C if they use $\alpha = .05$?
+
+1.  Calculate approximate power using the book approach.
+
+```{r}
+# f2 = 0.15
+cohen.ES(test = "f2", size = "medium")
+f2 <- 0.15
+
+# true pre = 0.13
+f2 / (f2 + 1)
+```
+
+When medium effect size (Cohen's f2) is 0.15, the true PRE is 0.13. According to the table in book, when $n = 24$, $\alpha = 0.05$, $\eta^2 = 0.1$, the power is 0.35.
+
+2.  Verify using `pwr` (it will not match exactly, but should be close).
+
+```{r}
+pwr.f2.test(1, 23, f2 = 0.15, sig.level = 0.05)
+```
+
+Using `pwr`, the chance (power) is 0.46.
+
+### B4b. Two ways to increase power without increasing n
+
+Given that they cannot admit additional students, state two things they could do to increase power.
+
+-   Increasing $\alpha$, for example, $\alpha = .10$
+-   Reducing error, for example, adding more predictors into the model (e.g., gender)
+
+### B4c. Try-out question: setting up a conditional model comparison
+
+The committee wants to know whether GRE-Verbal, GRE-Math, and undergraduate GPA are useful predictors of first-year GPA.
+
+We have not yet learned how to *test* these conditional models, but set up the comparison:
+
+-   Model C: predicts the mean
+-   Model A: predicts GPA conditionally using all 3 predictors
+
+Specify both models and indicate $n - P_A$ and $P_A - P_C$ for this comparison.
+
+$$
+\text{Model C: }GPA_i = b_0 + \varepsilon_i 
+$$
+
+$$
+\text{Model A: }GPA_i = b_0 + b_1GREverbal + b_2GREmath + b_3GPAundergrad + \varepsilon_i 
+$$
+
+-   $n - P_A = 20$
+-   $P_A - P_C = 3$
+
+------------------------------------------------------------------------
+
+# Part C: Your own data (leave code blocks empty)
+
+These questions refer to the model comparison you tested previously using your own dataset.
+
+## C1. Confidence interval for $b_0$
+
+Identify the 95% confidence interval for $b_0$ in Model A. Explain what this interval represents.
+
+```{r}
+gss2024 <- readRDS(file = here::here("data", "gss2024.rds"))
+
+# variable: satisfied with way democracy works in America
+# 1 = very satisfied, 2 = fairly satisfied, 3 = not very satisfied, 4 = not at all satisfied
+satdemoc <- gss2024 |> 
+  select(satdemoc) |>
+  drop_na() |>
+  haven::zap_labels()
+glimpse(satdemoc)
+
+satdemoc <- satdemoc |>
+   mutate(satdemoc_dev = satdemoc - 2.5)
+
+# null hypothesis : Americans are neutural to the way democracy works on average 
+model_c <- lm(satdemoc_dev ~ 0, data = satdemoc)
+
+model_a <- lm(satdemoc_dev ~ 1, data = satdemoc)
+
+# pre 
+pre <- (deviance(model_c) - deviance(model_a)) / deviance(model_c)
+pre
+
+# n 
+n <- nrow(satdemoc) 
+n
+
+# t_critic, alpha = 0.05
+t_crit <- qt(0.975, 3162)
+t_crit
+
+# sd
+sd <- sd(satdemoc$satdemoc_dev) 
+sd
+
+# se
+se <- sd(satdemoc$satdemoc_dev) / sqrt(n)
+se
+
+# left boundary
+2.5 + mean(satdemoc$satdemoc_dev) - t_crit*se
+
+# right boundary
+2.5 + mean(satdemoc$satdemoc_dev) + t_crit*se
+```
+
+The 95% confidence interval for $b_0$ in Model A is (2.66, 2.72). It means if we repeatedly draw sample from the population, 95% of the mean value of satisfaction will fall between 2.66 and 2.72.
+
+```{r}
+
+```
+
+## C2. Journal-style summary
+
+Write a complete journal-style summary for your data.
+
+```{r}
+
+```
+
+This dataset describes the satisfaction with way democracy works in America among 3163 participants in the GSS 2024 survey (1 = very satisfied, 2 = fairly satisfied, 3 = not very satisfied, 4 = not at all satisfied). In this dataset, the mean value of satisfaction is 2.16, and its 95% confidence interval is (2.66, 2.72).
+
+## C3. Estimate of true PRE
+
+If you wanted to replicate this study, what would be your best guess for the true value of PRE?
+
+```{r}
+
+```
+
+The best estimate for the true value of PRE is 0.05.
+
+## C4. Sample size for power = .80
+
+Given your estimate of true PRE, what sample size would you need to achieve power = .80? Use `pwr.f2.test()`.
+
+```{r}
+f2 <- pre / (1 - pre)
+f2
+
+pwr.f2.test(1, f2 = f2, sig.level = .05, power = .80)
+```
+
+The sample size needs to be at least 150.
+
+```{r}
+
+```
+
+## C5. Sketch the PRE distributions
+
+Draw a chart that shows the distribution of PRE under both the $H_0$ and $H_1$ hypotheses. Label $\alpha$, $\beta$, power, and the surprise point.
+
+```{r}
+# null data function
+calc_null_pre <- function() {
+  
+  null_data <- tibble(satdemoc_dev = rnorm(3163, 0, 0.84))
+  
+  m0 <- lm(satdemoc_dev ~ 0, data = null_data)
+  m1 <- lm(satdemoc_dev ~ 1, data = null_data) 
+  
+  pre <- (deviance(m0) - deviance(m1)) / deviance(m0)
+  
+  return(pre)
+  
+}
+
+# create a skeleton 
+null_sims <- tibble(sim_number = 1:1000) |> 
+  rowwise() |> 
+  mutate(pre = calc_null_pre())
+
+# critic PRE, alpha = 0.05
+pre_crit<- quantile(null_sims$pre, 0.95)
+pre_crit
+
+# plotting
+ggplot(null_sims,
+       aes(x = pre)) +
+  geom_histogram(binwidth = 0.0005) +
+  geom_vline(xintercept = pre,
+             linetype = "dashed",
+             color = "red") +
+  geom_vline(xintercept = pre_crit,
+             color = "blue",
+             linetype = "dashed") +
+  annotate(
+    "text",
+    x = pre_crit,
+    y = 150,
+    label = expression(alpha == 0.05),
+    angle = 90,
+    hjust = -0.2,
+    vjust = 1.1,
+    color = "blue"
+  ) +
+  annotate(
+    "text",
+    x = pre,
+    y = 120,
+    label = "Surprise point",
+    angle = 90,
+    hjust = -0.2,
+    vjust = 1.1,
+    color = "red"
+  )
+```
+
+```{r}
+
+```
