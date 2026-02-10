@@ -489,16 +489,11 @@ This dataset describes the resting pulse rate among 31 participants in the fitne
 If you wanted to replicate this study, what would be your best guess for the *true* value of PRE?
 
 ```{r}
-# pre
-sse_c <- sum((fitness$RSTPULSE - 72)^2)
-sse_c
-sse_a <- sum((fitness$RSTPULSE - 53.74)^2)
-sse_a
-pre <- (sse_c - sse_a) / sse_c
-pre
+pre_guess <- 1 - (1 - pre)*(31/30)
+pre_guess
 ```
 
-My best guess for the true value of PRE is 0.83.
+My best guess for the true value of PRE is 0.828.
 
 ### B1d. Power for a replication at the same $n$
 
@@ -594,11 +589,11 @@ t.test(fitness$change, conf.level = 0.95)
 If you wanted to replicate this study, what would be your best guess for the true value of PRE?
 
 ```{r}
-pre <- (sse_c - sse_a) / sse_c
-pre
+pre_guess <- 1 - (1 - pre)*(31/30)
+pre_guess
 ```
 
-My best guess for the true value of PRE is 0.99.
+My best guess for the true value of PRE is 0.991.
 
 ### B2c. Required effect size for power = .80 at n = 100
 
@@ -683,10 +678,11 @@ Given that $F^* > F_\text{crit}$, we should reject the null hypothesis, thus the
 If you wanted to replicate this study, what would be your best guess for the true value of PRE?
 
 ```{r}
-pre
+pre_guess <- 1 - (1 - pre)*(10/9)
+pre_guess
 ```
 
-My best guess the true value of PRE is 0.55.
+My best guess the true value of PRE is 0.501.
 
 ### B3c. Sample size for power targets
 
@@ -846,10 +842,11 @@ This dataset describes the satisfaction with way democracy works in America amon
 If you wanted to replicate this study, what would be your best guess for the true value of PRE?
 
 ```{r}
-
+pre_guess <- 1 - (1 - pre)*(3163/3162)
+pre_guess
 ```
 
-The best estimate for the true value of PRE is 0.05.
+The best estimate for the true value of PRE is 0.050.
 
 ## C4. Sample size for power = .80
 
