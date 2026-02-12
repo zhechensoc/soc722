@@ -176,7 +176,7 @@ Number of parameters: 1
 
 Unused-but-potential parameters (degrees of freedom): 5
 
--   **Null hypothesis:** $H_0: b_0 \le 100$. The mean value of my friends' IQ is less than or equal to 100, or my friends are not smarter than average.
+-   **Null hypothesis:** $H_0: b_0 = 100$. The mean value of my friends' IQ is 100, or my friends are smart as average.
 
 ### (b) PTSD
 
@@ -196,7 +196,7 @@ Number of parameters: 1
 
 Unused-but-potential parameters (degrees of freedom): 42
 
--   **Null hypothesis:** $H_0: b_0 \le 37$. The mean value of the soldiers' PTSD score is less than or equal to 37, or these soldiers are not suffering from PTSD.
+-   **Null hypothesis:** $H_0: b_0 = 37$. The mean value of the soldiers' PTSD score is equal to 37, or these soldiers are not suffering from PTSD.
 
 ### (c) Chipotle sales
 
@@ -216,7 +216,7 @@ Number of parameters: 1
 
 Unused-but-potential parameters (degrees of freedom): 199
 
--   **Null hypothesis:** $H_0: b_0 \ge 0$. The mean value of the difference score is greater than or equal to 0, or the sales are not depressed.
+-   **Null hypothesis:** $H_0: b_0 = 0$. The mean value of the difference score is 0, or the sales are not depressed.
 
 ------------------------------------------------------------------------
 
@@ -281,7 +281,7 @@ Write both a verbal description and a mathematical statement (use $\varepsilon_i
 
     $$\text{Satisfy}_i = b_0 + \varepsilon_i$$
 
-**Null hypothesis:** $H_0: b_0 \le 2.5$. The mean value of the satisfaction score is less than or equal to 2.5, or American people are satisfied or neutral to the way democracy works on average.
+**Null hypothesis:** $H_0: b_0 = 2.5$. The mean value of the satisfaction score is equal to 2.5, or American people are neutral to the way democracy works on average.
 
 ### (d) Estimate both models with `lm()`
 

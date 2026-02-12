@@ -1,0 +1,115 @@
+---
+title: "In Class 2026-02-10"
+author: "Zhe Chen"
+format: html
+editor: visual
+---
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(broom)
+library(stringr)
+library(modelsummary)
+library(tinyplot)
+library(tidyverse)
+
+tinytheme("ipsum",
+          family = "Roboto Condensed",
+          palette.qualitative = "Tableau 10",
+          palette.sequential = "agSunset")
+```
+
+t-test
+
+```{r}
+states <- bind_cols(state.x77, 
+                    rownames_to_column = state,
+                    region = state.division) |>
+  janitor::clean_names() |>
+  mutate(south = as.integer(
+    str_detect(as.character(region),
+               "South")
+  ))
+```
+
+$$ 
+\text{MODEL C}: LIFEEXP_i = \beta_0 + \varepsilon_i
+$$
+
+$$
+\text{MODEL A}: LIFEEXP_i = \beta_0 + \beta_1SOUTH_i + \varepsilon_i
+$$
+
+```{r}
+mc <- lm(life_exp ~ south, data = states)
+ma <- lm(life_exp ~ 1 + south, data = states)
+
+```
+
+t-test is directional, F-test is not directional.
+
+$$
+t = b_1 / SE 
+$$
+
+
+```{r}
+mc <- lm(life_exp ~ 1, data = states)
+ma <- lm(life_exp ~ 1 + hs_grad, data = states)
+
+# tables 
+msummary(list("MC" = mc, 
+              "MA" = ma),
+         fmt = 3,
+         estimate = "{estimate} ({std.error})",
+         statistic = NULL,
+         gof_map = c("nobs", "F", "r.squared"))
+```
+
+
+**Centering** - only reason: for interpretation
+
+```{r}
+states <- states |>
+  mutate(c_hs_grad = hs_grad - mean(hs_grad))
+
+fit_cent <- lm(life_exp ~ c_hs_grad, data = states)
+
+msummary(list("Centered" = fit_cent),
+         fmt = 3,
+         estimate = "{estimate} ({std.error})",
+         statistic = NULL,
+         gof_map = c("nobs", "F", "r.squared"))
+```
+
+The intercept $b_0$ is the expected value of outcome when `hs_grad` is at its mean. But the slope $b_1$ is the same. 
+
+**Normalization**
+
+```{r}
+states <- states |>
+  mutate(hs_grad_01 = (hs_grad - min(hs_grad)) / (max(hs_grad) - min(hs_grad)))
+
+fit_norm <- lm(life_exp ~ hs_grad_01, data = states)
+
+msummary(list("Norm" = fit_norm),
+         fmt = 3,
+         estimate = "{estimate} ({std.error})",
+         statistic = NULL,
+         gof_map = c("nobs", "F", "r.squared"))
+```
+
+**X-standardization**
+
+convert X into a z-score, outcome is the same 
+
+$$
+x^* 
+$$
+
+**full standardization**
+
+both X and Y are standardization 
+
+same as correlation 
