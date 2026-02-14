@@ -1,0 +1,302 @@
+---
+title: "Chapter 6"
+format: html
+embed-resources: true
+---
+
+## Overview
+
+### Goals
+This is our first step into a larger world (of regression analysis). Here, instead of comparing zero-parameter models (MC) to one-parameter models (MA), we're going to **compare one-parameter models (MC) to two-parameter models (MA)**. The basic question is whether we want to make the _same prediction_ for every observation or _different predictions_ for different observations, condition on their value of some predictor.
+
+As before, we'll augment the book by using simulations to understand null distributions, statistical inference, and power.
+
+### Set up
+
+Here are the packages we're going to need. We'll also set our {tinyplot} theme.
+
+```{r}
+#| message: false
+
+library(dplyr)
+library(tidyr)
+library(broom)
+library(stringr)
+library(modelsummary)
+library(tinyplot)
+
+tinytheme("ipsum",
+          family = "Avenir Next Condensed",
+          palette.qualitative = "Tableau 10",
+          palette.sequential = "agSunset")
+```
+
+### Additional considerations
+
+Before moving onto the chapter proper, I want to say a something about the t-test. The book really doesn't properly talk about this until Chapter 9, but we've been skirting around it and talking about the t distribution already so I'd like to talk a little about this.
+
+#### The t-test as a two-group `lm()` comparison*
+
+Let's look at Southern and non-Southern states in 1977 and compare them on income per capita.
+
+```{r}
+states <- bind_cols(state.x77, region = state.division) |>
+  janitor::clean_names() |>
+  mutate(south = as.integer(
+    str_detect(as.character(region), 
+               "South")))
+```
+
+We can write:
+
+\begin{align}
+&\text{Model C:  } \text{LIFEEXP}_i = \beta_0 + \epsilon_i \\
+
+&\text{Model A:  } \text{LIFEEXP}_i = \beta_0 + \beta_1 (\text{SOUTH}_i) + \epsilon_i
+\end{align}
+
+```{r}
+mc <- lm(life_exp ~ 1, 
+         data = states)
+ma <- lm(life_exp ~ 1 + south, 
+         data = states)
+
+msummary(list("MC" = mc, 
+              "MA" = ma),
+         fmt = 2,
+         shape = term ~ model + statistic,
+         gof_map = c("nobs", "F", "r.squared"))
+```
+
+This is exactly the same as a t-test (that assumes that the two groups have equal within-group variances).
+
+#### Two approaches to coding a predictor
+
+The above is called _dummy coding_ or _reference coding_ and is by far the most common in sociology. But sometimes (including in the book) you will see _effect coding_ (also called _deviation_ or _contrast coding_) that codes the predictor (-1, 1) instead of (0, 1).
+
+```{r}
+states <- states |> 
+  mutate(south_eff = if_else(south == 1, 1, -1))
+
+ma_effect <- lm(life_exp ~ south_eff, data = states)
+
+msummary(list("MA (dummy)"  = ma, 
+              "MA (effect)" = ma_effect),
+         fmt = 2,
+         shape = term ~ model + statistic,
+         gof_map = c("nobs", "F", "r.squared"))
+```
+
+With effect coding, the intercept is the **grand mean**, or the overall mean you'd expect if both groups were the same size. And $b_1$ is half the difference between the two groups.
+
+## Defining a linear two-parameter model
+
+As in the book, we'll look at regression first through the lens of two continuous variables.
+
+```{r}
+plt(life_exp ~ hs_grad,
+    data = states,
+    ylim = c(67, 74),
+    main = "Life expectancy and education",
+    sub = "US states, 1977",
+    xlab = "% high school graduates",
+    ylab = "Life expectancy at birth")
+```
+
+We can add a regression line to this.
+
+```{r}
+plt(life_exp ~ hs_grad,
+    data = states,
+    ylim = c(67, 74),
+    main = "Life expectancy and education",
+    sub = "US states, 1977",
+    xlab = "% high school graduates",
+    ylab = "Life expectancy at birth")
+plt_add(type = "lm",
+        level = .99)
+```
+
+Contrast that to assuming the same prediction for each state.
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show code"
+
+states$mean_lex <- mean(states$life_exp)
+width <- sd(states$life_exp / sqrt(nrow(states))) * qt(.995, 49) # 99%
+
+plt(mean_lex ~ hs_grad,
+    data = states,
+    ymax = mean_lex + width,
+    ymin = mean_lex - width,
+    ylim = c(67, 74),
+    type = "ribbon",
+    main = "Life expectancy and education",
+    sub = "US states, 1977",
+    xlab = "% high school graduates",
+    ylab = "Life expectancy at birth")
+plt_add(life_exp ~ hs_grad,
+    data = states,
+    type = "p")
+```
+
+## Estimating a linear two-parameter model
+
+Compare the models.
+
+```{r}
+mc <- lm(life_exp ~ 1, data = states)
+ma <- lm(life_exp ~ hs_grad, data = states)
+
+msummary(list("MC" = mc, 
+              "MA" = ma),
+         fmt = 3,
+         shape = term ~ model + statistic,
+         gof_map = c("nobs", "F", "r.squared"))
+```
+
+## An alternative specification
+
+### Centering
+
+```{r}
+states <- states |> 
+  mutate(c_hs_grad = hs_grad - mean(hs_grad))
+```
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show code"
+
+plt(life_exp ~ c_hs_grad,
+    data = states,
+    ylim = c(67, 74),
+    main = "Life expectancy and education",
+    sub = "US states, 1977",
+    xlab = "% high school graduates (centered)",
+    ylab = "Life expectancy at birth")
+plt_add(type = "lm",
+        level = .99)
+```
+
+Interpretation when centered.
+
+```{r}
+msummary(lm(life_exp ~ c_hs_grad,
+            data = states),
+         fmt = 3,
+         shape = term ~ model + statistic,
+         gof_map = c("nobs", "F", "r.squared"))
+```
+
+
+### Normalization*
+
+See Cohen et al., "[The Problem of Units and the Circumstance for POMP](https://doi.org/10.1207/S15327906MBR3403_2)".
+
+Create normalized predictor and visualize.
+
+```{r}
+states <- states |> 
+  mutate(hs_grad01 = (hs_grad - min(hs_grad)) /     # subtract min
+                     (max(hs_grad) - min(hs_grad)), # div by range
+         hs_grad01 = scales::rescale(hs_grad))      # an easier way
+```
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show code"
+
+plt(life_exp ~ hs_grad01,
+    data = states,
+    ylim = c(67, 74),
+    main = "Life expectancy and education",
+    sub = "US states, 1977",
+    xlab = "high school graduate rate (normalized)",
+    ylab = "Life expectancy at birth")
+plt_add(type = "lm",
+        level = .99)
+```
+
+How to interpret.
+
+```{r}
+fit_norm <- lm(life_exp ~ hs_grad01,
+               data = states)
+tidy(fit_norm)
+glance(fit_norm) |> 
+  select(r.squared, statistic)
+```
+
+
+## Statistical inference in two-parameter models
+
+### Testing the null
+
+We're going to do this with simulations. Specifically, we're going to implement a **permutation test.** First let's check out the vectors.
+
+```{r}
+# to make things a bit quicker
+y <- states$life_exp
+x <- states$hs_grad
+
+# most extreme positive possible
+plt(sort(y) ~ sort(x))
+lm(sort(y) ~ sort(x))$coefficients[2]
+
+# most extreme negative possible
+plt(sort(y) ~ sort(x, decreasing = TRUE))
+lm(sort(y) ~ sort(x, decreasing = TRUE))$coefficients[2]
+```
+
+Let's make a function.
+
+```{r}
+# NB: we could make this faster but I want to make it clear...
+get_slope <- function() {
+  
+  d <- tibble(
+    y = sample(y, length(y)),
+    x = sample(x, length(x))
+  )
+  
+  fit <- lm(y ~ x, data = d)
+  
+  b1 <- fit$coefficients[2]
+  
+  return(b1)
+  
+}
+```
+
+Skeleton and apply.
+
+```{r}
+mynulls <- tibble(
+  id = 1:1000) |> 
+  rowwise() |> 
+  mutate(b1 = get_slope())
+```
+
+Plot with real value.
+
+```{r}
+est_b1 <- ma$coefficients[2] 
+
+plt(~ b1,
+    data = mynulls,
+    type = "hist",
+    main = "Observed and null estimates of b1",
+    xlim = c(min(mynulls$b1) * 1.05 , est_b1 * 1.05))
+plt_add(type = type_vline(v = est_b1),
+        col = "#F28E2B",
+        lw = 2)
+```
+
+
+### Power analysis
+
+### Two-parameter model comparison
+
+[That W3 = W1, not father son]
