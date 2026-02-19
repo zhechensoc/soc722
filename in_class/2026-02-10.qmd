@@ -53,7 +53,6 @@ $$
 t = b_1 / SE 
 $$
 
-
 ```{r}
 mc <- lm(life_exp ~ 1, data = states)
 ma <- lm(life_exp ~ 1 + hs_grad, data = states)
@@ -66,7 +65,6 @@ msummary(list("MC" = mc,
          statistic = NULL,
          gof_map = c("nobs", "F", "r.squared"))
 ```
-
 
 **Centering** - only reason: for interpretation
 
@@ -83,7 +81,7 @@ msummary(list("Centered" = fit_cent),
          gof_map = c("nobs", "F", "r.squared"))
 ```
 
-The intercept $b_0$ is the expected value of outcome when `hs_grad` is at its mean. But the slope $b_1$ is the same. 
+The intercept $b_0$ is the expected value of outcome when `hs_grad` is at its mean. But the slope $b_1$ is the same.
 
 **Normalization**
 
@@ -102,14 +100,14 @@ msummary(list("Norm" = fit_norm),
 
 **X-standardization**
 
-convert X into a z-score, outcome is the same 
+convert X into a z-score, outcome is the same
 
 $$
 x^* 
 $$
 
-**full standardization**
+**Full standardization**
 
-both X and Y are standardization 
+both X and Y are standardization
 
-same as correlation 
+b1 same as correlation (Pearson's r)
