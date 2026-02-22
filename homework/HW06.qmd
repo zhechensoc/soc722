@@ -1,0 +1,650 @@
+---
+title: "Chapter 6 homework"
+format:
+  html:
+    embed-resources: true
+author: Zhe Chen
+date: 2026-02-20
+---
+
+## Setup
+
+```{r}
+#| message: FALSE
+library(tidyverse)
+library(tinyplot)
+library(here)
+```
+
+## Data
+
+This homework uses a built-in dataset from base R (`state.x77`). Run the code below to create the working tibble `states`.
+
+```{r}
+state.x77_with_names <- as_tibble(state.x77,
+                                  rownames = "state")
+
+states <- bind_cols(state.x77_with_names,
+                    region = state.division) |>
+  janitor::clean_names() |>
+  mutate(
+    south = as.integer(
+      str_detect(as.character(region), "South")
+    )
+  )
+```
+
+Throughout, use:
+
+-   outcome: `life_exp`
+-   predictor: `murder`
+
+# Question 1: Descriptive statistics
+
+## 1a. Descriptive statistics (psych)
+
+Use `psych::describe()` (or something else if you want) to get descriptive statistics for `life_exp` and `murder`.
+
+```{r}
+states |>
+  select(life_exp, murder) |>
+  psych::describe()
+```
+
+## 1b. Descriptive statistics (tidyverse)
+
+Compute (at minimum) the mean and standard deviation of `life_exp` and `murder` using `summarize()`.
+
+```{r}
+states |>
+  select(life_exp, murder) |>
+  summarize(
+    mean_life_exp = mean(life_exp),
+    sd_life_exp = sd(life_exp),
+    mean_murder = mean(murder),
+    sd_murder = sd(murder)
+  )
+```
+
+# Question 2a: Regression and model comparison
+
+You will evaluate whether `murder` predicts `life_exp`.
+
+## 2a(i). Write the model comparison and null hypothesis
+
+Write Model C and Model A in words and equations, and state the null hypothesis.
+
+A typical setup for testing whether a slope is needed is:
+
+-   Model C (constrained): slope fixed at 0
+-   Model A (augmented): slope estimated from the data
+
+Use the notation below (fill in the missing pieces in your write-up):
+
+Model C:
+
+$$
+Y_i = \;\;\;\;\;\;\;\; + \varepsilon_i
+$$
+
+Model A:
+
+$$
+Y_i = \;\;\;\;\;\;\;\; + \;\;\;\;\;\;\;\; X_i + \varepsilon_i
+$$
+
+Null hypothesis (in symbols and words):
+
+$$
+H_0: \;\;\;\;\;\;\;\;
+$$
+
+------------------------------------------------------------------------
+
+Model C: Murder rate is not associated with life expectancy at the state level.
+
+$$
+Life\_exp_i = \beta_0 + \varepsilon_i
+$$
+
+Model A: Murder rate is associated with life expectancy at the state level.
+
+$$
+Life\_exp_i = \beta_0 + \beta_1Murder_i + \varepsilon_i
+$$
+
+Null hypothesis: The slope of murder rate is 0.
+
+$$
+H_0: \beta_1 = 0
+$$
+
+## 2a(ii). Fit both models
+
+```{r}
+mc <- lm(life_exp ~ 1, data = states)
+ma <- lm(life_exp ~ 1 + murder, data = states)
+```
+
+## 2a(iii). Compute SSE(C), SSE(A), PRE, and F
+
+Compute:
+
+-   $\mathrm{SSE}_C$ and $\mathrm{SSE}_A$ from the fitted models
+-   $\mathrm{PRE} = (\mathrm{SSE}_C - \mathrm{SSE}_A)/\mathrm{SSE}_C$
+-   the model-comparison $F$ statistic
+
+Use `deviance()` for SSE (RSS) and `df.residual()` as needed.
+
+$$
+F = \frac{(\mathrm{SSE}_C - \mathrm{SSE}_A)/(P_A - P_C)}{\mathrm{SSE}_A/(n - P_A)}.
+$$
+
+```{r}
+# SSE_C
+sse_c <- deviance(mc)
+sse_c
+
+# SSE_A
+sse_a <- deviance(ma)
+sse_a
+
+# PRE
+pre <- (sse_c - sse_a) / sse_c
+pre
+
+# F
+pc <- nrow(states) - df.residual(mc)
+pc
+
+pa <- nrow(states) - df.residual(ma)
+pa
+
+n <- nrow(states)
+n
+
+f <- ((sse_c - sse_a) / (pa - pc)) / (sse_a / (n - pa))
+f
+```
+
+## 2a(iv). Write the prediction equation and interpret coefficients
+
+```{r}
+# model summary
+summary(ma)
+
+t <- -sqrt(f)
+t
+
+pf <- pf(f, 1, 48, lower.tail = FALSE)
+pf
+
+pt <- 2 * pt(t, 48)
+pt
+```
+
+Write the prediction equation implied by Model A:
+
+$$
+\widehat{Life\_exp} = 72.97 - 0.28(Murder)
+$$
+
+Interpret:
+
+-   the intercept:
+    -   When the state's murder rate is 0%, its average life expectancy is 72.97 years.
+-   the slope:
+    -   For each percentage increase in the state's murder rate, the average life expectancy decreases by 0.28 years.
+
+## 2a(v). Conclusion
+
+State:
+
+-   statistical conclusion (report $F$ or $t$, PRE, and $p$):
+    -   By moving from Model C to Model A, the PRE is 0.61, with the $F$ is 74.99 ($t$ = -8.66), $p$ = 2.26e-11. In other words, given the null hypothesis is true, the observed $F$ is very surprising. Therefore, we should reject the null hypothesis.
+-   substantive conclusion (in plain language)
+    -   Murder rate is negatively associated with average life expectancy at the state level. For each percentage increase in the state's murder rate, its average life expectancy decreases by 0.28 years.
+
+# Question 2b: Center the predictor
+
+Create a centered version of murder:
+
+## 2b(i). Create `murder_c` and refit the model
+
+```{r}
+states <- states |>
+  mutate(murder_c = murder - mean(murder))
+
+mc_c <- lm(life_exp ~ 1, data = states)
+ma_c <- lm(life_exp ~ 1 + murder_c, data = states)
+```
+
+## 2b(ii). Report SSE(A), SSE(C), PRE, and F again
+
+Compute the same fit statistics (SSE, PRE, F). Compare them to the results from Question 2a.
+
+```{r}
+# SSE_C
+sse_c_c <- deviance(mc_c)
+sse_c_c
+
+# SSE_A
+sse_a_c <- deviance(ma_c)
+sse_a_c
+
+# PRE
+pre_c <- (sse_c_c - sse_a_c) / sse_c_c
+pre_c
+
+# F
+pc_c <- nrow(states) - df.residual(mc_c)
+pc_c
+
+pa_c <- nrow(states) - df.residual(ma_c)
+pa_c
+
+n_c <- nrow(states)
+n_c
+
+f_c <- ((sse_c_c - sse_a_c) / (pa_c - pc_c)) / (sse_a_c / (n_c - pa_c))
+f_c
+
+# compare with 2a
+all.equal(sse_c, sse_c_c)
+all.equal(sse_a, sse_a_c)
+all.equal(pre, pre_c)
+all.equal(f, f_c)
+```
+
+The SSE_C, SSE_A, PRE, F are the same as those in 2a.
+
+## 2b(iii). Interpret coefficients after centering
+
+```{r}
+# model summary
+summary(ma_c)
+
+t_c <- -sqrt(f_c)
+t_c
+
+pf_c <- pf(f_c, 1, 48, lower.tail = FALSE)
+pf_c
+
+pt_c <- 2 * pt(t_c, 48)
+pt_c
+```
+
+Write the prediction equation for the centered model and interpret the intercept and slope.
+
+In particular: what does the intercept represent *now*?
+
+$$
+\widehat{Life\_exp} = 70.88 - 0.28(Murder\_c)
+$$
+
+Interpret:
+
+-   the intercept:
+    -   When the state's murder rate is the mean value (7.38), its average life expectancy is 70.88 years.
+-   the slope:
+    -   For each percentage increase in the state's murder rate, the average life expectancy decreases by 0.28 years.
+
+## 2b(iv). Plot and compare
+
+Make two scatterplots with regression lines:
+
+1.  `life_exp` vs. `murder`
+2.  `life_exp` vs. `murder_c`
+
+How are these plots different?
+
+```{r}
+par(mfrow = c(1, 2))
+
+# life_exp vs. murder
+tinyplot(life_exp ~ murder, data = states,
+          xlim = c(0, max(states$murder)))
+abline(lm(life_exp ~ murder, data = states), col = "red")
+
+# life_exp vs. murder_c
+tinyplot(life_exp ~ murder_c, data = states)
+abline(lm(life_exp ~ murder_c, data = states), col = "red")
+```
+
+These two plot have the same slopes, as the the $b_1$ in 2a and 2b is the same. However, the intercepts are different. In `life_exp` vs. `murder`, the intercept indicates the prediction of average life expectancy when the murder rate is 0; while in `life_exp` vs. `murder_c`, the intercept indicates the prediction of average life expectancy when the murder rate is the mean value.
+
+# Question 2c: Change the units of the predictor
+
+Create a transformed predictor by standardizing `murder`.
+
+## 2c(i). Create `murder_std` and refit the model
+
+```{r}
+states <- states |>
+  mutate(murder_std = (murder - mean(murder)) / sd(murder))
+
+mc_std <- lm(life_exp ~ 1, data = states)
+ma_std <- lm(life_exp ~ 1 + murder_std, data = states)
+```
+
+## 2c(ii). Report SSE(A), SSE(C), PRE, and F again
+
+Compute SSE, PRE, and F again and compare them to 2a and 2b.
+
+```{r}
+# SSE_C
+sse_c_std <- deviance(mc_std)
+sse_c_std
+
+# SSE_A
+sse_a_std <- deviance(ma_std)
+sse_a_std
+
+# PRE
+pre_std <- (sse_c_std - sse_a_std) / sse_c_std
+pre_std
+
+# F
+pc_std <- nrow(states) - df.residual(mc_std)
+pc_std
+
+pa_std <- nrow(states) - df.residual(ma_std)
+pa_std
+
+n_std <- nrow(states)
+n_std
+
+f_std <- ((sse_c_std - sse_a_std) / (pa_std - pc_std)) / (sse_a_std / (n_std - pa_std))
+f_std
+
+# compare with 2a, 2b
+all.equal(sse_c, sse_c_c, sse_c_std)
+all.equal(sse_a, sse_a_c, sse_a_std)
+all.equal(pre, pre_c, pre_std)
+all.equal(f, f_c, f_std)
+```
+
+The SSE_C, SSE_A, PRE, F are the same as those in 2a and 2b
+
+## 2c(iii). Interpret coefficients after rescaling
+
+Write the prediction equation and interpret the slope carefully in the new units.
+
+```{r}
+# model summary
+summary(ma_std)
+
+t_std <- -sqrt(f_std)
+t_std
+
+pf_std <- pf(f_std, 1, 48, lower.tail = FALSE)
+pf_std
+
+pt_std <- 2 * pt(t_std, 48)
+pt_std
+```
+
+$$
+\widehat{Life\_exp} = 70.88 - 1.05(Murder\_std)
+$$
+
+Interpret:
+
+-   the intercept:
+    -   When the state's murder rate is mean value (7.38) , its average life expectancy is 70.88 years.
+-   the slope:
+    -   For each standard deviation increase in the state's murder rate, the average life expectancy decreases by 1.04 years.
+
+# Question 3: Predicted values and what transformations do (and do not) change
+
+You now have three versions of the same basic relationship:
+
+1.  using `murder`
+2.  using `murder_c`
+3.  using `murder_std`
+
+## 3a. Predicted life expectancy at a specific murder rate
+
+Using each of your three fitted Model A versions, compute the predicted life expectancy for a state with `murder` = 8.
+
+Show your work. (Be explicit about how you convert 8 into the appropriate value for `murder_c` and `murder_std`.)
+
+```{r}
+# using murder
+summary(ma)
+life_exp <- 72.97356 - 0.28395 * 8
+life_exp
+
+# using murder_c
+summary(ma_c)
+life_exp_c <- 70.87860 - 0.28395 * (8 - mean(states$murder))
+life_exp_c
+
+# using murder_std
+summary(ma_std)
+life_exp_std <- 70.8786 - 1.048 * ((8 - mean(states$murder))/ sd(states$murder))
+life_exp_std
+
+# check 
+all.equal(life_exp, life_exp_c, life_exp_std)
+```
+
+## 3b. Summary paragraph
+
+Write a brief summary explaining what you learned about transforming a predictor:
+
+-   How do these transformations affect the estimated intercept and slope?
+-   Do they change predicted values (when transformed consistently)?
+-   Do they change overall goodness of fit (SSE, PRE, $F$)?
+
+Summary:
+
+-   The transformation from using `murder` to `murder_c` does not change the slope, but changes the intercept; the transformation from using `murder_c` to `murder_std` does not change the intercept, but changes the slope; the transformation from using `murder` to `murder_std` changes both the intercept and the slope.
+-   No, they do not change predicted values.
+-   No, they do not change overall goodness of fit (SSE, PRE, $F$).
+
+# Project application
+
+Do the same thing with an outcome and predictor of your choice from your own dataset. Use three transformations:
+
+-   original
+-   normalized X
+-   fully standardized
+
+Interpret the intercepts and slopes for each of the three models. Compare the fit statistics for each of the three models.
+
+```{r}
+gss2024 <- readRDS(file = here::here("data", "gss2024.rds"))
+# tvhours: hours per day watching tv
+# age: age of respondent
+gss <- gss2024 |> 
+  select(tvhours, age) |>
+  drop_na() |>
+  haven::zap_labels()
+psych::describe(gss)
+```
+
+Model C: Age is not associated with hours per day watching TV.
+
+$$
+\text{TVhours}_i = \beta_0 + \varepsilon_i
+$$ Model A: Age is associated with hours per day watching TV.
+
+$$
+\text{TVhours}_i = \beta_0 + \beta_1\text{Age}_i + \varepsilon_i
+$$
+
+Null hypothesis: The slope of age is 0.
+
+$$
+\beta_1 = 0
+$$
+
+## Original
+
+```{r}
+# fit models
+mc <- lm(tvhours ~ 1, data = gss)
+ma <- lm(tvhours ~ 1 + age, data = gss)
+
+# SSE_C
+sse_c <- deviance(mc)
+sse_c
+
+# SSE_A
+sse_a <- deviance(ma)
+sse_a
+
+# PRE
+pre <- (sse_c - sse_a) / sse_c
+pre
+
+# F
+pc <- nrow(gss) - df.residual(mc)
+pc
+
+pa <- nrow(gss) - df.residual(ma)
+pa
+
+n <- nrow(gss)
+n
+
+f <- ((sse_c - sse_a) / (pa - pc)) / (sse_a / (n - pa))
+f
+
+# summary Model A
+summary(ma)
+```
+
+Prediction equation:
+
+$$
+\widehat{\text{TVhours}} = 1.46 + 0.04 (\text{Age})
+$$
+
+Interpret:
+
+-   the intercept:
+    -   When the individual's age years are 0, she watches TV for 1.46 hours per day.
+-   the slope:
+    -   For each year increase in the individual's age, her hours watching TV per day increase by 0.04 hours.
+
+## Normalized X
+
+```{r}
+# normalize X 
+gss <- gss |>
+  mutate(age_n = (age - min(age)) / (max(age) - min(age)))
+psych::describe(gss)
+
+# fit models
+mc_n <- lm(tvhours ~ 1, data = gss)
+ma_n <- lm(tvhours ~ 1 + age_n, data = gss)
+
+# SSE_C
+sse_c_n <- deviance(mc_n)
+sse_c_n
+
+# SSE_A
+sse_a_n <- deviance(ma_n)
+sse_a_n
+
+# PRE
+pre_n <- (sse_c_n - sse_a_n) / sse_c_n
+pre_n
+
+# F
+pc_n <- nrow(gss) - df.residual(mc_n)
+pc_n
+
+pa_n <- nrow(gss) - df.residual(ma_n)
+pa_n
+
+n <- nrow(gss)
+n
+
+f_n <- ((sse_c_n - sse_a_n) / (pa_n - pc_n)) / (sse_a_n / (n - pa_n))
+f_n
+
+# summary Model A
+summary(ma_n)
+```
+
+Prediction equation:
+
+$$
+\widehat{\text{TVhours}} = 2.12 + 2.61 (\text{Age})
+$$
+
+Interpret:
+
+-   the intercept:
+    -   When the individual's age is the least value (18 years), she watches TV for 2.12 hours per day.
+-   the slope:
+    -   The individual with the oldest age (89 years) has 2.61 more hours watching TV per day, than the individual with the youngest age (18 years).
+
+## Fully Standardized
+
+```{r}
+# standardize X and Y 
+gss <- gss |>
+  mutate(age_std = (age - mean(age)) / sd(age),
+         tvhours_std = (tvhours - mean(tvhours)) / sd(tvhours))
+psych::describe(gss)
+
+# fit models
+mc_std <- lm(tvhours_std ~ 1, data = gss)
+ma_std <- lm(tvhours_std ~ 1 + age_std, data = gss)
+
+# SSE_C
+sse_c_std <- deviance(mc_std)
+sse_c_std
+
+# SSE_A
+sse_a_std <- deviance(ma_std)
+sse_a_std
+
+# PRE
+pre_std <- (sse_c_std - sse_a_std) / sse_c_std
+pre_std
+
+# F
+pc_std <- nrow(gss) - df.residual(mc_std)
+pc_std
+
+pa_std <- nrow(gss) - df.residual(ma_std)
+pa_std
+
+n <- nrow(gss)
+n
+
+f_std <- ((sse_c_std - sse_a_std) / (pa_n - pc_n)) / (sse_a_std / (n - pa_n))
+f_std
+
+# summary Model A
+summary(ma_std)
+```
+
+Prediction equation:
+
+$$
+\widehat{\text{TVhours}} = 0 + 0.02 (\text{Age})
+$$
+
+Interpret:
+
+-   the intercept:
+    -   When the individual's age is the mean value (50.35 years), she watches TV for the average hours (3.32 hours) per day.
+-   the slope:
+    -   For each standard deviation increase in the individual's age, her hours watching TV per day increase by 0.02 standard deviation in hours.
+
+## Compare Fit Statistics
+
+```{r}
+all.equal(sse_c, sse_c_n, sse_c_std)
+all.equal(sse_a, sse_a_n, sse_a_std)
+all.equal(pre, pre_n, pre_std)
+all.equal(f, f_n, f_std)
+```
+
+Their fit statistics (SSE, PRE, $F$) are the same.
