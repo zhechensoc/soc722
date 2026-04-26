@@ -1,0 +1,356 @@
+---
+title: "Stat 1 Mid-Term Review"
+author: "Zhe Chen"
+format: 
+  html: default
+  pdf: default
+embed-resources: true
+editor: visual
+---
+
+# Concepts
+
+## Basic Equation
+
+$$
+\text{DATA} = \text{MODEL} + \text{ERROR}
+$$
+
+In one-parameter model:
+
+$$
+Y_i = \beta_0 + \text{ERROR}
+$$
+
+Or,
+
+$$
+\begin{aligned}
+Y_i &= \beta_0 + \varepsilon_i \\
+    &= \hat{Y_i} + e_i
+\end{aligned}
+$$
+
+In general:
+
+$$
+\begin{aligned}
+Y_i &= \beta_0 + \beta_1 X_{i1} + \beta_2 X_{i2} + \cdots + \beta_j X_{ij} + \beta_{p-1} X_{i,p-1} + \varepsilon_i \\
+    &= b_0 + b_1 X_{i1} + b_2 X_{i2} + \cdots + b_j X_{ij} + b_{p-1} X_{i,p-1} + e_i
+\end{aligned}
+$$
+
+## Residual
+
+***residual***: the part left over after using the model to predict the data
+
+$$
+\text{ERROR} = \text{DATA} - \text{MODEL}
+$$
+
+## Compact Model, Augmented Model, and PRE
+
+***compact model***: Model C (***null hypothesis***)
+
+***augmented model**:* Mode A (***alternative hypothesis**)*
+
+$$
+\text{ERROR(A)} \le \text{ERROR(C)}
+$$
+
+***proportional reduction in error*** (**PRE**)
+
+$$
+\begin{aligned}
+\text{PRE} &= \frac{\text{ERROR(C)} - \text{ERROR(A)}}{\text{ERROR(C)}} \\
+           &= 1 - \frac{\text{ERROR(A)}}{\text{ERROR(C)}}
+\end{aligned}
+$$
+
+## SSE and Mean
+
+***sum of squared errors*** (**SSE**)
+
+$$
+ERROR = \sum_{i=1}^n e_i^2 = \sum_{i=1}^n (Y_i - \hat{Y_i})^2 
+$$
+
+In compact model:
+
+$$
+ERROR = \sum_{i=1}^n (Y_i - b_0)^2 = n(B_0-\bar{Y})^2
+$$
+
+***mean*** ($\bar{Y}$) minimizes the *sum of square errors* (SSE)
+
+## MSE, Variance, SD, and CV
+
+***mean squared error*** (**MSE**): the remaining error per potential parameter
+
+$$
+\text{MSE} = \frac{\text{SSE}} {n-p} = \frac{\sum_{i=1}^n {(Y_i - \hat{Y_i})^2}} {n-p} 
+$$
+
+For the simple model, MSE is ***variance***
+
+$$
+\text{Variance} = s^2 = \frac{\text{SSE}} {n-1} = \frac{\sum_{i=1}^n {(Y_i - \hat{Y_i})^2}} {n-1} 
+$$
+
+***standard deviation*** (**SD**) is the square root of MSE (**RMSE**). For the simple model:
+
+$$
+\text{Standard Deviation} = s = \sqrt{MSE} = \sqrt{\frac{\sum_{i=1}^n {(Y_i - \hat{Y_i})^2}} {n-1} }
+$$
+
+***coefficient of variation***(**CV**): the size of the standard deviation to be proportional to the size of the mean
+
+$$
+\text{Coefficient of Variation} = CV = \frac{s}{\bar{Y}}
+$$
+
+## Normal Distribution
+
+$$
+X \sim N(\mu, \sigma^2)
+$$
+
+where $\mu$ is the expected value (mean) of the distribution, $\sigma^2$ is the variance of distribution. In standardized normal distribution, $\mu = 0, \sigma^2 = 1$.
+
+In standardized normal distribution:
+
+-   68% of observations fall between -1 and +1
+
+-   95% of observations fall between -2 and +2
+
+-   99.7% of observations fall between -3 and +3
+
+***z score** (***standard normal deviates**):
+
+$$
+z = \frac{Y - \mu} {\sigma}
+$$
+
+## Assumption of Errors
+
+-   **Independence**: each error is independent of any other error
+
+-   **Identically Distributed**: all errors are from the same distribution (same $\sigma^2$)
+
+-   **Unbiased**: the expect value (mean) of the distribution from which the errors are sampled is zero
+
+MSE ($s^2$) is an unbiased estimator of population error variance $\sigma^2$.
+
+## Statistical Inference
+
+***sum of squares reduced*** (**SSR**):
+
+$$
+\text{SSR} = \text{SSE(C)} - \text{SSE(A)}
+$$
+
+In simple models:
+
+$$
+\text{SSR} = \sum_{i=1}^n (B_0 - \bar{Y})^2 = n(B_0 - \bar{Y})^2
+$$
+
+$$
+\text{PRE} = \frac{\text{SSR}}{\text{SSE(C)}}
+$$
+
+PRE overestimates and is a biased estimator of $\eta^2$.
+
+## Statistic F
+
+$$
+F = \frac{PRE/(PA-PC)}{(1-PRE)/(n-PA)}
+$$
+
+-   PA - PC: *numerator degrees of freedom*
+
+-   n - PA: *denominator degrees of freedom*
+
+-   numerator: average proportional reduction in error per parameter
+
+-   denominator: average proportional reduction in error per parameter that could be added to the model
+
+Critical values of $F (PA - PC = 1, \alpha = 0.05)$ :
+
+-   n - PA = 10, F = 4.97
+
+-   n - PA = 30, F = 4.17
+
+-   n - PA = ∞, F = 3.84
+
+Alternative formula of F:
+
+$$
+F = \frac{SSR/(PA-PC)}{(SSE(A))/(n-PA)} = \frac{MSR}{MSE}
+$$
+
+-   **MSR**: ***mean squares reduced***
+
+-   **MSE**: **mean square error**
+
+### F and t
+
+$$ \sqrt{F_{1, n-1}} = t_{n-1} $$
+
+## Type of Errors and Statistical Power
+
+***Type I error*** ($\alpha$): when Model C is correct, we incorrectly reject it ($\alpha$ = *significance level*)
+
+***Type II error** (*$\beta$) : when Model C is incorrect, we do not reject it
+
+$1 - \beta$ : **statistical power:** *"*the likelihood that a statistical test leads the researcher to reject Model C *when Nature has determined that Model C is incorrect*."
+
+**unbiased estimate of** $\eta^2$:
+
+$$
+\eta^2 = 1 - (1-PRE)[\frac{n-PC}{n-PA}]
+$$
+
+How to improve power:
+
+-   Increasing the size of the effect
+
+-   Reducing error
+
+-   Increasing $\alpha$
+
+-   Increasing n
+
+# Confidence Interval
+
+Definition (by S. Vaisey):
+
+> If you were to repeat the entire data-generating-and-interval-building process indefinitely under identical conditions (same model, same population mean), then 99% of the intervals produced by this method would contain the true mean and 1% would not.
+
+In the simple model:
+
+$$
+b_0 \pm \sqrt{\frac{F_{crit;1;n-1}MSE}{n}} = b_0 \pm t_{\alpha/2;n-1}SE
+$$
+
+**standard error** (**SE**):
+
+$$
+SE = \sqrt{\frac{MSE}{n}} = \frac{s}{\sqrt{n}}
+$$
+
+## Effect Size
+
+***Cohen's d***
+
+$$
+d = \frac{\beta_0 - B_0}{s} = 2 \sqrt{\frac{\eta^2}{1-\eta^2}}
+$$
+
+$$
+\eta^2 = \frac{d^2}{d^2 + 4}
+$$
+
+## Maximum Likelihood
+
+***minimizing the sum of squared residuals*** is equivalent to ***maximizing the likelihood***of the observations
+
+## Simple Regression
+
+$$
+Y_i = \beta_0 + \beta_1X_i + \varepsilon_i
+$$
+
+$$
+b_1 = \frac{\sum(X_i - \bar{X})(Y_i - \bar{Y_i})}{\sum(X_i - \bar{X})^2} = \frac{s_{XY}}{s^2_X}
+$$
+
+$$
+b_0 = \bar{Y} - b_1\bar{X}
+$$
+
+***Pearson's r***
+
+$$
+r = \sqrt{PRE} \quad \text{or} \quad r^2 = PRE
+$$
+
+t
+
+$$
+t = \frac{\beta_1}{SE}
+$$
+
+## Multiple Regression
+
+$$ Y_i = \beta_0 + \beta_1X_{1i} + \beta_2X_{2i} + ... + \beta_{p-1}X_{p-1i} +  \varepsilon_i $$
+
+$$ b_j = \frac{\sum(X_{xj} - \bar{X})(Y_i - \bar{Y_i})}{\sum(X_{ij} - \bar{X})^2} $$
+
+$$ b_0 = \bar{Y} - b_1\bar{X_j} - b_2\bar{X_j} -...-b_{p-1}\bar{X}_{p-1}$$
+
+### Interpreting Multiple Regression Results
+
+> According to the model, adjusting for the murder rate, each additional percentage point of high school graduation predicts .044 more years of life expectancy.
+
+> According to the model, adjusting for the high school graduation rate, each unit increase in the murder rate per 100,000 predicts .237 fewer years of life expectancy.
+
+# Empirical Questions
+
+## Calculate Mean, SD, SSE, and PRE
+
+(from HW 02)
+
+At 10 grocery stores, a market researcher records the number of cases of a product sold both before and after coupons were mailed to households in the area. The data below are the **changes** in the number of cases sold (positive = more after coupons, negative = fewer, zero = no change).
+
+| Store | Change |
+|------:|-------:|
+|     A |      5 |
+|     B |      4 |
+|     C |     -2 |
+|     D |      6 |
+|     E |      1 |
+|     F |      0 |
+|     G |     -4 |
+|     H |      3 |
+|     I |      2 |
+|     J |      7 |
+
+-   Calculate the mean and standard deviation for the change scores by hand
+
+-   Specify Model C, Model A, and null hypothesis
+
+-   Compute SSE for both models and PRE
+
+## Interpret & Convert Results across Regression Models
+
+|             | Original | Centered | Norm.  | X-std. | XY-std. |
+|:------------|:--------:|:--------:|:------:|:------:|:-------:|
+| (Intercept) |  65.740  |  70.879  | 69.397 | 70.879 | -0.000  |
+| hs_grad     |  0.097   |          |        |        |         |
+| c_hs_grad   |          |  0.097   |        |        |         |
+| hs_grad01   |          |          | 2.855  |        |         |
+| z_hs_grad   |          |          |        | 0.782  |  0.582  |
+| Num.Obs.    |    50    |    50    |   50   |   50   |   50    |
+| F           |  24.615  |  24.615  | 24.615 | 24.615 | 24.615  |
+| R2          |  0.339   |  0.339   | 0.339  | 0.339  |  0.339  |
+
+# Concept Questions
+
+-   Why is $\text{ERROR}(\text{Model A}) \le \text{ERROR}(\text{Model C})$?
+
+-   What is a degree of freedom?
+
+-   What is a sampling distribution of a statistic (like a mean), and what is it useful for?
+
+-   How can a sampling distribution be used to evaluate whether an observed value is “surprising” under a null hypothesis?
+
+-   In F formula:
+
+    -   What does the numerator $\text{SSR}/(P_A - P_C)$ represent?
+
+    -   What does the denominator $\text{SSE}(A)/(n - P_A)$ represent?
+
+    -   What does $F$ represent conceptually?
+
+-   What is the standard error?

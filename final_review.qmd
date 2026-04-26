@@ -1,0 +1,694 @@
+---
+title: "Stat 1 Final Review"
+author: "Zhe Chen"
+format: 
+  html: default
+  pdf: default
+embed-resources: true
+editor: visual
+---
+
+# Written Part
+
+## Chapter 1 Introduction
+
+**Basic Equation**
+
+$$
+\text{DATA} = \text{MODEL} + \text{ERROR}
+$$
+
+One-parameter model:
+
+$$
+\begin{aligned}
+Y_i &= \beta_0 + \text{ERROR} \\
+    &= \beta_0 + \varepsilon_i \\
+    &= \hat{Y_i} + e_i
+\end{aligned}
+$$
+
+In general:
+
+$$
+\begin{aligned}
+Y_i &= \beta_0 + \beta_1 X_{i1} + \beta_2 X_{i2} + \cdots + \beta_j X_{ij} + \beta_{p-1} X_{i,p-1} + \varepsilon_i \\
+    &= b_0 + b_1 X_{i1} + b_2 X_{i2} + \cdots + b_j X_{ij} + b_{p-1} X_{i,p-1} + e_i
+\end{aligned}
+$$
+
+**Residual**: the part left over after using the model to predict the data
+
+$$
+\text{ERROR} = \text{DATA} - \text{MODEL}
+$$
+
+## Chapter 2: Simple Models - Errors
+
+**Sum of Squared Srrors** (**SSE**)
+
+$$
+\text{ERROR} = \sum_{i=1}^n e_i^2 = \sum_{i=1}^n (Y_i - \hat{Y_i})^2 
+$$
+
+In compact model:
+
+$$
+\text{ERROR} = \sum_{i=1}^n (Y_i - b_0)^2 = n(B_0-\bar{Y})^2
+$$
+
+**Mean** ($\bar{Y}$) minimizes the sum of square errors (SSE)
+
+**Mean Squared Error** (**MSE**): the remaining error per potential parameter
+
+$$
+\text{MSE} = \frac{\text{SSE}} {n-p} = \frac{\sum_{i=1}^n {(Y_i - \hat{Y_i})^2}} {n-p} 
+$$
+
+For the simple model, MSE is **variance**
+
+$$
+\text{Variance} = s^2 = \frac{\text{SSE}} {n-1} = \frac{\sum_{i=1}^n {(Y_i - \hat{Y_i})^2}} {n-1} 
+$$
+
+**Standard Deviation** (**SD**) is the square root of MSE (**RMSE**). For the simple model:
+
+$$
+\text{Standard Deviation} = s = \sqrt{MSE} = \sqrt{\frac{\sum_{i=1}^n {(Y_i - \hat{Y_i})^2}} {n-1} }
+$$
+
+**Coefficient of Variation**(**CV**): the size of the standard deviation to be proportional to the size of the mean
+
+$$
+\text{Coefficient of Variation} = CV = \frac{s}{\bar{Y}}
+$$
+
+## Chapter 3: Simple Models - Error and Sampling Distributions
+
+**Normal Distribution**
+
+$$
+X \sim N(\mu, \sigma^2)
+$$
+
+where $\mu$ is the expected value (mean) of the distribution, $\sigma^2$ is the variance of distribution. In standardized normal distribution, $\mu = 0, \sigma^2 = 1$.
+
+In standardized normal distribution:
+
+-   68% of observations fall between -1 and +1
+
+-   95% of observations fall between -2 and +2
+
+-   99.7% of observations fall between -3 and +3
+
+**z score** (**standard normal deviates**):
+
+$$
+z = \frac{Y - \mu} {\sigma}
+$$
+
+**Assumption of Errors**
+
+-   **Independence**: each error is independent of any other error
+-   **Identically Distributed**: all errors are from the same distribution (same $\sigma^2$)
+-   **Unbiased**: the expect value (mean) of the distribution from which the errors are sampled is zero
+
+MSE ($s^2$) is an unbiased estimator of population error variance $\sigma^2$.
+
+## Chapter 4: Simple Models - Statistical Inferences
+
+**Compact Model**: Model C (***null hypothesis***)
+
+**Augmented Model**: Mode A (***alternative hypothesis**)*
+
+**Proportional Reduction in Error** (**PRE**)
+
+$$ \begin{aligned} \text{PRE} &= \frac{\text{ERROR(C)} - \text{ERROR(A)}}{\text{ERROR(C)}} \\            &= 1 - \frac{\text{ERROR(A)}}{\text{ERROR(C)}} \end{aligned} $$
+
+**Sum of Squares Reduced** (**SSR**):
+
+$$
+\text{SSR} = \text{SSE(C)} - \text{SSE(A)}
+$$
+
+$$
+\text{PRE} = \frac{\text{SSR}}{\text{SSE(C)}}
+$$
+
+PRE overestimates and is a biased estimator of $\eta^2$.
+
+**Statistic F**
+
+$$
+F = \frac{PRE/(PA-PC)}{(1-PRE)/(n-PA)}
+$$
+
+-   PA - PC: numerator degrees of freedom
+
+-   n - PA: denominator degrees of freedom
+
+-   numerator: average proportional reduction in error per parameter
+
+-   denominator: average proportional reduction in error per parameter that could be added to the model
+
+Critical values of $F (PA - PC = 1, \alpha = 0.05)$ :
+
+-   n - PA = 10, F = 4.97
+
+-   n - PA = 30, F = 4.17
+
+-   n - PA = ∞, F = 3.84
+
+Alternative formula of F:
+
+$$
+F = \frac{SSR/(PA-PC)}{(SSE(A))/(n-PA)} = \frac{MSR}{MSE}
+$$
+
+-   **MSR**: **mean squares reduced**
+
+-   **MSE**: **mean square error**
+
+**Statistic t**
+
+$$ \sqrt{F_{1, n-1}} = t_{n-1} $$
+
+## Chapter 5: Statistical Power
+
+**Type I error** ($\alpha$): when Model C is correct, we incorrectly reject it ($\alpha$ = *significance level*)
+
+**Type II error** *(*$\beta$) : when Model C is incorrect, we do not reject it
+
+$1 - \beta$ : **statistical power:** *"*the likelihood that a statistical test leads the researcher to reject Model C *when Nature has determined that Model C is incorrect*."
+
+**unbiased estimate of** $\eta^2$:
+
+$$
+\eta^2 = 1 - (1-PRE)[\frac{n-PC}{n-PA}]
+$$
+
+**How to improve power:**
+
+-   Increasing the size of the effect
+
+-   Reducing error
+
+-   Increasing $\alpha$
+
+-   Increasing n
+
+**Confidence Interval**
+
+Definition (by S. Vaisey):
+
+> If you were to repeat the entire data-generating-and-interval-building process indefinitely under identical conditions (same model, same population mean), then 99% of the intervals produced by this method would contain the true mean and 1% would not.
+
+In the simple model:
+
+$$
+b_0 \pm \sqrt{\frac{F_{crit;1;n-1}MSE}{n}} = b_0 \pm t_{\alpha/2;n-1}SE
+$$
+
+**Standard Error** (**SE**):
+
+$$
+SE = \sqrt{\frac{MSE}{n}} = \frac{s}{\sqrt{n}}
+$$
+
+**Cohen's d**
+
+$$
+d = \frac{\beta_0 - B_0}{s} = 2 \sqrt{\frac{\eta^2}{1-\eta^2}}
+$$
+
+$$
+\eta^2 = \frac{d^2}{d^2 + 4}
+$$
+
+## Section A: Recap
+
+**Maximum Likelihood**: minimizing the sum of squared residuals is equivalent to maximizing the likelihood of the observations
+
+## Chapter 6: Simple Regression
+
+**Equation:**
+
+$$
+Y_i = \beta_0 + \beta_1X_i + \varepsilon_i
+$$
+
+**Calculate b1**
+
+$$
+b_1 = \frac{\sum(X_i - \bar{X})(Y_i - \bar{Y_i})}{\sum(X_i - \bar{X})^2} = \frac{s_{XY}}{s^2_X}
+$$
+
+**Calculate b0**
+
+$$
+b_0 = \bar{Y} - b_1\bar{X}
+$$
+
+**Pearson's r**
+
+$$
+r = \sqrt{PRE} \quad \text{or} \quad r^2 = PRE
+$$
+
+$$
+r = \frac{\sum(X_i - \bar{X})(Y_i - \bar{Y_i})}{\sum(X_i - \bar{X})\sum(Y_i - \bar{Y})} = \frac{s_{XY}}{s_Xs_Y} = b_1\frac{s_X}{s_Y}
+$$
+
+**t**
+
+$$
+t = \frac{\beta_1}{SE}
+$$
+
+**Alternative Specifications**
+
+-   **centering**
+
+-   **normalization**
+
+-   **x-standardization**
+
+-   **full standardization**: fully standardized simple regression coefficient is exactly the same as **Pearson’s r** or the **correlation coefficient**
+
+**Interpret Regression Results**
+
+|             | Original | Centered | Norm.  | X-std. | XY-std. |
+|:------------|:--------:|:--------:|:------:|:------:|:-------:|
+| (Intercept) |  65.740  |  70.879  | 69.397 | 70.879 | -0.000  |
+| hs_grad     |  0.097   |          |        |        |         |
+| c_hs_grad   |          |  0.097   |        |        |         |
+| hs_grad01   |          |          | 2.855  |        |         |
+| z_hs_grad   |          |          |        | 0.782  |  0.582  |
+| Num.Obs.    |    50    |    50    |   50   |   50   |   50    |
+| F           |  24.615  |  24.615  | 24.615 | 24.615 | 24.615  |
+| R2          |  0.339   |  0.339   | 0.339  | 0.339  |  0.339  |
+
+> According to the model, **adjusting for** the murder rate, **each additional** percentage point of high school graduation **predicts** .044 more years of life expectancy.
+
+> According to the model, **adjusting for** the high school graduation rate, **each unit increase** in the murder rate per 100,000 **predicts** .237 fewer years of life expectancy.
+
+## Likelihood Comparison and Information Criteria
+
+**Null Model:**
+
+$$
+lifeexp_i \sim \mathcal{N}(\mu_i, \sigma) \\ \mu_i = \beta_0
+$$
+
+-   A **distributional family** for the outcome
+-   A **linear predictor** that links conditional expectations to the key parameter in that family (here, $\mu$, or the **conditional mean**)
+
+**Likelihood Ratio Test**
+
+$$
+G^2 = 2[\mathcal{l}(\hat{\theta_1)}-\mathcal{l}(\hat{\theta_0)}] \approx \chi^2_{df}
+$$
+
+**Deviance**
+
+$D$ equals to -2 times of log-likelihood, it means "**how far away are the predictions of this model from the data?**"
+
+$$
+D_M = -2l_M
+$$
+
+**Proportional Reduction in Deviance**
+
+$$
+PRD = \frac{D_C - D_A}{D_C}
+$$
+
+**AIC (Akaike's Information Criterion)**
+
+$$
+AIC = D + 2k
+$$
+
+-   $D$: deviance
+
+-   $k$: number of estimated parameters (e.g., 3 for a simple regression)
+
+-   motivation: out-of-sample prediction (increasingly complex models do an increasingly good job of fitting the training (in-sample) data but do an increasingly bad job of fitting the test(out-of-sample) data. In fact, the deviance difference is 2 per excess parameter.)
+
+**BIC (Bayesian Information Criterion)**
+
+$$
+BIC = D + k*logn
+$$
+
+-   $logn$: natural log of the sample size
+
+-   motivation: which of the models that we’re considering is most likely to be the “true model” that generated the data
+
+## Chapter 7: Multiple Regression
+
+$$ Y_i = \beta_0 + \beta_1X_{1i} + \beta_2X_{2i} + ... + \beta_{p-1}X_{p-1i} +  \varepsilon_i $$
+
+$$ b_j = \frac{\sum(X_{xj} - \bar{X})(Y_i - \bar{Y_i})}{\sum(X_{ij} - \bar{X})^2} $$
+
+$$ b_0 = \bar{Y} - b_1\bar{X_j} - b_2\bar{X_j} -...-b_{p-1}\bar{X}_{p-1}$$
+
+## Chapter 8: Moderated and Nonlinear Regression Models
+
+**Additive Model**
+
+$$
+LifeExp_i = \beta_0 + \beta_1(HsGrad_i) + \beta_2(Income_i) + \varepsilon_i
+$$
+
+or,
+
+$$
+LifeExp_i = \mathcal{N}(\mu_i, \sigma) \\ 
+\mu_i = \beta_0 + \beta_1(HsGrad_i) + \beta_2(Income_i) 
+$$
+
+**Interaction Model**
+
+$$
+LifeExp_i = \beta_0 + \beta_1(HsGrad_i) + \beta_2(Income_i) + \\
+\beta_3(HsGrad_i)(Income_i) + \varepsilon_i
+$$
+
+or,
+
+$$
+LifeExp_i = \mathcal{N}(\mu_i, \sigma) \\ 
+\mu_i = \beta_0 + \beta_1(HsGrad_i) + \beta_2(Income_i) + \\ 
+\beta_3(HsGrad_i)(Income_i)
+$$
+
+-   the `hs_grad` null hypothesis is now “the slope of `hs_grad` is 0 when `inc1000` is 0”
+-   the `inc1000` null hypothesis is now “the slope of `inc1000` is 0 when `hs_grad` is 0”
+
+**Polynomial Term**
+
+-   $\beta_1X + \beta_2X^2$
+
+-   the slope of $X$ depends on its own value
+
+**Anova vs. Likelihood Ratio Test**
+
+Likelihood ratio test gives a smaller p-value because the tail of the $\chi^2$ distribution is thinner than the tail of the $F$ distribution when the sample size is small. These get more similar as the sample size increases.
+
+# Coding Part
+
+```{r}
+#| message: false 
+
+library(tidyverse)
+library(ggplot2)
+library(car)
+library(here)
+gss2024 <- readRDS(file = here::here("data", "gss2024.rds"))
+```
+
+## Basic `dplyr`
+
+-   `filter()`
+
+-   `select()`
+
+-   `mutate()`
+
+-   `summarize()`
+
+-   `group_by`
+
+## Basic plotting
+
+### Bar Chart
+
+```{r}
+ggplot(data = cars,
+       mapping = aes(x = speed)) +
+  geom_bar()
+```
+
+### Histogram
+
+```{r}
+ggplot(data = cars,
+       mapping = aes(x = speed)) +
+  geom_histogram()
+```
+
+### Scatter Plot
+
+```{r}
+ggplot(data = cars,
+       mapping = aes(x = speed,
+                     y = dist)) +
+  geom_point()
+```
+
+## SSE_A, SSE_C, and PRE
+
+```{r}
+d <- gss2024 |> 
+  select(polviews, sex) |> 
+  drop_na() |> 
+  haven::zap_labels()
+```
+
+### SSE_A
+
+```{r}
+d <- d |> 
+  mutate(polviews_dev = polviews - 4)
+
+mod_a <- lm(polviews_dev ~ 1,
+            data = d)
+deviance(mod_a)
+```
+
+### SSE_C
+
+```{r}
+mod_c <- lm(polviews_dev ~ 0, 
+            data = d)
+deviance(mod_c) 
+```
+
+### PRE
+
+```{r}
+pre <- (deviance(mod_c) - deviance(mod_a)) / deviance(mod_a)
+pre
+```
+
+## Statistic F and t
+
+Get critical value:
+
+-   `fcrit = qf(p, 1, df)`
+
+-   `tcrit = qt((1 + p)/2, df)`
+
+Get p value (right tail):
+
+-   `p(f) = 1 - pf(fstat, 1, df)`
+
+-   `p(t) = 2 * (1 - pt(sqrt(fstat), df))`
+
+## Statistical Power
+
+Command: `power.t.test()`
+
+Example:
+
+```{r}
+# minimum interesting change (choice increase or decrease of 30 minutes)
+delta <- .5
+
+# estimate of variance of differences
+sd_diff <- sd(d$polviews_dev)  # from GSS
+
+# plug everything into the formula
+power.t.test(delta = delta,
+             sd = sd_diff,
+             type = "one.sample", # I am comparing one sample's difference score
+             sig.level = .01,
+             power = .8)
+```
+
+For fully standardized variables: `pwr::pwr.r.test`
+
+```{r}
+pwr::pwr.r.test(r = .1, 
+                sig.level = .01, 
+                power = .9, 
+                alternative = "two.sided")
+```
+
+## Likelihood Comparison
+
+**Calculate likelihood of the model**
+
+`logLik()`
+
+```{r}
+# compact model 
+mc <- lm(polviews_dev ~ 0,
+            data = d)
+logLik(mc)
+
+# augmented model 
+ma <- lm(polviews_dev ~ 1,
+            data = d)
+logLik(ma)
+```
+
+**Likelihood ratio test**
+
+`lmtext::lrtest()`
+
+```{r}
+lmtest::lrtest(mc, ma)
+```
+
+**AIC & BIC**
+
+```{r}
+AIC(mc, ma)
+BIC(mc, ma)
+```
+
+## Simple & Multiple Regression
+
+```{r}
+#| message: false
+
+state.x77_with_names <- as_tibble(state.x77,
+                                  rownames = "state")
+  
+states <- bind_cols(state.x77_with_names, 
+                    region = state.division) |> # both are in base R
+  janitor::clean_names() |>                     # lower case and underscore
+  mutate(south = as.integer(                    # make a south dummy
+    str_detect(as.character(region), 
+               "South")))
+```
+
+**Pairs Plot**
+
+```{r}
+states |> 
+  select(life_exp, hs_grad, murder) |> 
+  pairs()
+```
+
+**Correlation Matrix**
+
+```{r}
+states |> 
+  select(life_exp, hs_grad, murder) |> 
+  cor()
+```
+
+**Estimate Model**
+
+```{r}
+mod <- lm(life_exp ~ 1 + hs_grad + murder,
+          data = states)
+broom::tidy(mod)
+broom::glance(mod)
+```
+
+**Transformation**
+
+-   centering: `x - mean(x)`
+
+-   normalization: `(x - min(x)) / (max(x) - min (x))`
+
+-   standardization: `(x - mean(x)) / sd(x)`
+
+## Interaction Models 
+
+```{r}
+#| message: false 
+
+state.x77_with_names <- as_tibble(state.x77,
+                                  rownames = "state")
+  
+states <- bind_cols(state.x77_with_names, 
+                    region = state.division) |> # both are in base R
+  janitor::clean_names() |>                     # lower case and underscore
+  mutate(south = as.integer(                    # make a south dummy
+    str_detect(as.character(region), 
+               "South"))) |> 
+  mutate(inc1000 = income/1000)                 # income variable
+```
+
+**Additive Model**
+
+```{r}
+m1 <- lm(life_exp ~ 1 + hs_grad + inc1000,
+         data = states)
+broom::tidy(m1)
+```
+
+**Interaction Model**
+
+```{r}
+m2 <- lm(life_exp ~ 1 + hs_grad * inc1000, 
+         data = states)
+broom::tidy(m2)
+```
+
+**Average Marginal Effects**
+
+```{r}
+marginaleffects::avg_slopes(m2, variables = c("hs_grad", "inc1000"))
+```
+
+**Visualization**
+
+```{r}
+# all values of hs_grad (x axis)
+myhs <- seq(min(states$hs_grad),
+            max(states$hs_grad),
+            length = 100)
+
+# representative values of income 
+myincs <- quantile(states$inc1000,
+                   c(0, 0.5, 1))
+
+
+# all combinations 
+xgrid <- expand_grid(inc1000 = myincs,
+                     hs_grad = myhs)
+
+# generate predictions
+yhat <- predict(m2,
+                newdata = xgrid,
+                interval = "confidence",
+                level = 0.95)
+
+# bind together 
+preds <- bind_cols(yhat, xgrid)
+
+# convert inc1000 into factors 
+preds <- preds |>
+    mutate(income = case_match(inc1000,
+                               min(states$inc1000) ~ "min",
+                               max(states$inc1000) ~ "max",
+                               .default = "median"))
+
+
+# plotting 
+ggplot(preds, aes(x = hs_grad, y = fit, fill = income, color = income)) +
+  geom_line(linewidth = 1) +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2, color = NA) 
+```
+
+**Anova**
+
+```{r}
+anova(m1, m2)
+```
