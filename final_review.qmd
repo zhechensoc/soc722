@@ -8,7 +8,7 @@ embed-resources: true
 editor: visual
 ---
 
-# Written Part
+# Writing Part
 
 ## Chapter 1 Introduction
 
@@ -209,7 +209,7 @@ $$
 b_0 \pm \sqrt{\frac{F_{crit;1;n-1}MSE}{n}} = b_0 \pm t_{\alpha/2;n-1}SE
 $$
 
-**Standard Error** (**SE**):
+**standard error** (**SE**):
 
 $$
 SE = \sqrt{\frac{MSE}{n}} = \frac{s}{\sqrt{n}}
@@ -396,6 +396,75 @@ $$
 
 Likelihood ratio test gives a smaller p-value because the tail of the $\chi^2$ distribution is thinner than the tail of the $F$ distribution when the sample size is small. These get more similar as the sample size increases.
 
+## Chapter 9-11: Contrast Coding, ANOVA, and ANCOVA
+
+**Contrast Coding**
+
+## Poisson and Chapter 15 Logistic Regression
+
+**Poisson Distribution**
+
+Poisson distribution has **only one parameter** $\lambda$, for both the **mean** and **variance**. Poisson distribution is for **count variables**, and a discrete probability distribution that assigns a finite probability to all positive integers using a probability mass function.
+
+**Poisson Model**
+
+$$
+y_i = Poisson(\lambda_i) \\
+log(\lambda_i) = \beta_0 + \beta_1x_1
+$$
+
+or,
+
+$$
+\lambda_i = e^{\beta_0}e^{\beta_1x_i} = e^{\beta_0+\beta_1x_i}
+$$
+
+**Quantifying Difference**
+
+1.  difference in probabilities
+
+$$
+p_1 - p_2
+$$
+
+2.  relative risk ratio (RRR)
+
+$$
+\frac{p_1}{p_2}
+$$
+
+3.  odds ratio (OR)
+
+$$
+\frac{p_1/1-p_1}{p2/1-p_2}
+$$
+
+odds = $\frac{p}{1-p}$
+
+3.  log odds ratio
+
+$$
+\beta = log(\frac{p_1/1-p_1}{p2/1-p_2})
+$$
+
+the log odds ratio:
+
+-   centered at **0** when there’s no association (instead of 1 for the OR)
+
+-   Is **symmetric**: flipping which group is the reference just changes the sign
+
+-   Ranges over all of $(-\infty, +\infty)$.
+
+**Logit**
+
+$$
+logit(p) = log(\frac{p}{1-p}) = \beta
+$$
+
+$$
+p = \frac{e^\beta}{1+e^\beta}
+$$
+
 # Coding Part
 
 ```{r}
@@ -418,11 +487,13 @@ gss2024 <- readRDS(file = here::here("data", "gss2024.rds"))
 
 -   `summarize()`
 
--   `group_by`
+-   `group_by()`
 
 ## Basic plotting
 
 ### Bar Chart
+
+`geom_bar()`
 
 ```{r}
 ggplot(data = cars,
@@ -432,6 +503,8 @@ ggplot(data = cars,
 
 ### Histogram
 
+`geom_histogram()`
+
 ```{r}
 ggplot(data = cars,
        mapping = aes(x = speed)) +
@@ -439,6 +512,8 @@ ggplot(data = cars,
 ```
 
 ### Scatter Plot
+
+`geom_point()`
 
 ```{r}
 ggplot(data = cars,
@@ -608,7 +683,7 @@ broom::glance(mod)
 
 -   standardization: `(x - mean(x)) / sd(x)`
 
-## Interaction Models 
+## Interaction Models
 
 ```{r}
 #| message: false 
@@ -647,7 +722,7 @@ broom::tidy(m2)
 marginaleffects::avg_slopes(m2, variables = c("hs_grad", "inc1000"))
 ```
 
-**Visualization**
+**Visualization (continuous \* continuous)**
 
 ```{r}
 # all values of hs_grad (x axis)
@@ -687,8 +762,108 @@ ggplot(preds, aes(x = hs_grad, y = fit, fill = income, color = income)) +
   geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2, color = NA) 
 ```
 
-**Anova**
+**Visualization (continuous \* categorical)**
+
+## T test
+
+`t.test()`
 
 ```{r}
-anova(m1, m2)
+#| message: false
+
+gss2024 <- readRDS("data/gss2024.rds")
+
+d <- gss2024 |> 
+  select(tvhours, degree, educ) |> 
+  drop_na() |>
+  haven::zap_labels() |> 
+  mutate(college_fac = if_else(degree > 3, "BA+", "No BA"),
+         college = if_else(degree > 3, 1, 0),
+         degree_fac = factor(
+           case_match(degree,
+                      0 ~ "None",
+                      1 ~ "HS",
+                      2 ~ "AA",
+                      3 ~ "BA",
+                      4 ~ "GradProf"),
+           levels = c("None", "HS", "AA", "BA", "GradProf")))
+```
+
+```{r}
+t.test(tvhours ~ college,
+       data = d,
+       var.equal = TRUE) # assumes one sigma for both groups
+```
+
+## ANOVA
+
+`anova()`
+
+```{r}
+anova(lm(tvhours ~ 1 + college,
+         data = d))
+```
+
+## Contingency Table & Conditional Probabilities
+
+`janitor::tabyl()`
+
+```{r}
+#| message: false
+
+d <- readRDS("data/gss2024.rds") |> 
+  haven::zap_labels() |> 
+  select(tvhours, degree, sex) |> 
+  drop_na() |> 
+  mutate(sex = factor(sex, 
+                      labels = c("M", "F")),        # sex as a factor
+         degree_fac = factor(degree,
+                             labels = c("none", "HS", "AA", "BA", "grad")))
+```
+
+```{r}
+d |> 
+  janitor::tabyl(sex, degree_fac) 
+```
+
+## Generalized Linear Models
+
+```{r}
+#| message: false 
+d <- readRDS("data/gss2024.rds") |> 
+  haven::zap_labels() |> 
+  select(tvhours, degree, sex) |> 
+  drop_na() |> 
+  mutate(sex = factor(sex, 
+                      labels = c("M", "F")),        # sex as a factor
+         degree_fac = factor(degree,
+                             labels = c("none", "HS", "AA", "BA", "grad"))) |>
+    mutate(college_fac = if_else(degree > 3, "BA+", "No BA"))
+```
+
+### Linear (Gaussian)
+
+```{r}
+m1 <- glm(tvhours ~ 1 + sex,
+          data = d,
+          family = gaussian())
+summary(m1)
+```
+
+### Poisson
+
+```{r}
+m2 <- glm(tvhours ~ 1 + sex,
+          data = d,
+          family = poisson())
+summary(m2)
+```
+
+### Logistic
+
+```{r}
+m3 <- glm(degree_fac ~ 1 + sex,
+          data = d,
+          family = binomial(link = "logit"))
+summary(m3)
 ```
