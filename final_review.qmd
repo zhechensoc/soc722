@@ -45,7 +45,7 @@ $$
 
 ## Chapter 2: Simple Models - Errors
 
-**Sum of Squared Srrors** (**SSE**)
+**Sum of Squared Errors** (**SSE**)
 
 $$
 \text{ERROR} = \sum_{i=1}^n e_i^2 = \sum_{i=1}^n (Y_i - \hat{Y_i})^2 
@@ -181,7 +181,7 @@ $$ \sqrt{F_{1, n-1}} = t_{n-1} $$
 
 $1 - \beta$ : **statistical power:** *"*the likelihood that a statistical test leads the researcher to reject Model C *when Nature has determined that Model C is incorrect*."
 
-**unbiased estimate of** $\eta^2$:
+**unbiased estimate** $\eta^2$:
 
 $$
 \eta^2 = 1 - (1-PRE)[\frac{n-PC}{n-PA}]
@@ -297,7 +297,7 @@ $$
 **Null Model:**
 
 $$
-lifeexp_i \sim \mathcal{N}(\mu_i, \sigma) \\ \mu_i = \beta_0
+Y_i \sim \mathcal{N}(\mu_i, \sigma) \\ \mu_i = \beta_0
 $$
 
 -   A **distributional family** for the outcome
@@ -306,12 +306,14 @@ $$
 **Likelihood Ratio Test**
 
 $$
-G^2 = 2[\mathcal{l}(\hat{\theta_1)}-\mathcal{l}(\hat{\theta_0)}] \approx \chi^2_{df}
+G^2 = 2[\mathcal{l}(\hat{\theta_1)}-\mathcal{l}(\hat{\theta_0)}] \overset{\text{approx}}{\sim} \chi^2_{df}
 $$
 
 **Deviance**
 
-$D$ equals to -2 times of log-likelihood, it means "**how far away are the predictions of this model from the data?**"
+$D$ equals to -2 times of log-likelihood, it means "**how far away are the predictions of this model from**
+
+**the data?**"
 
 $$
 D_M = -2l_M
@@ -358,33 +360,33 @@ $$ b_0 = \bar{Y} - b_1\bar{X_j} - b_2\bar{X_j} -...-b_{p-1}\bar{X}_{p-1}$$
 **Additive Model**
 
 $$
-LifeExp_i = \beta_0 + \beta_1(HsGrad_i) + \beta_2(Income_i) + \varepsilon_i
+Y_i = \beta_0 + \beta_1(X_{i1}) + \beta_2(X_{i2}) + \varepsilon_i
 $$
 
 or,
 
 $$
-LifeExp_i = \mathcal{N}(\mu_i, \sigma) \\ 
-\mu_i = \beta_0 + \beta_1(HsGrad_i) + \beta_2(Income_i) 
+Y_i = \mathcal{N}(\mu_i, \sigma) \\ 
+\mu_i = \beta_0 + \beta_1(X_{i1}) + \beta_2(X_{i2}) 
 $$
 
 **Interaction Model**
 
 $$
-LifeExp_i = \beta_0 + \beta_1(HsGrad_i) + \beta_2(Income_i) + \\
-\beta_3(HsGrad_i)(Income_i) + \varepsilon_i
+Y_i = \beta_0 + \beta_1(X_{i1}) + \beta_2(X_{i2}) + \\
+\beta_3(X_{i1})(X_{i2}) + \varepsilon_i
 $$
 
 or,
 
 $$
-LifeExp_i = \mathcal{N}(\mu_i, \sigma) \\ 
-\mu_i = \beta_0 + \beta_1(HsGrad_i) + \beta_2(Income_i) + \\ 
-\beta_3(HsGrad_i)(Income_i)
+Y_i = \mathcal{N}(\mu_i, \sigma) \\ 
+\mu_i = \beta_0 + \beta_1(X_{i1}) + \beta_2(X_{i2}) + \\ 
+\beta_3(X_{i1})(X_{i2})
 $$
 
--   the `hs_grad` null hypothesis is now “the slope of `hs_grad` is 0 when `inc1000` is 0”
--   the `inc1000` null hypothesis is now “the slope of `inc1000` is 0 when `hs_grad` is 0”
+-   the $X_{i1}$ null hypothesis is “the slope of $X_{i1}$ is 0 when $X_{i2}$ is 0”
+-   the $X_{i2}$ null hypothesis is “the slope of $X_{i2}$ is 0 when $X_{i1}$ is 0”
 
 **Polynomial Term**
 
@@ -764,6 +766,48 @@ ggplot(preds, aes(x = hs_grad, y = fit, fill = income, color = income)) +
 
 **Visualization (continuous \* categorical)**
 
+```{r}
+# interaction model
+m3 <- lm(life_exp ~ 1 + hs_grad * south, 
+         data = states)
+broom::tidy(m3)
+
+            
+# all values of hs_grad (x axis)
+myhs <- seq(min(states$hs_grad),
+            max(states$hs_grad),
+            length = 100)
+
+# values of south 
+mysouth <- states$south
+
+
+# all combinations 
+xgrid <- expand_grid(hs_grad = myhs,
+                     south = mysouth)
+
+# generate predictions
+yhat <- predict(m3,
+                newdata = xgrid,
+                interval = "confidence",
+                level = 0.95)
+
+# bind together 
+preds <- bind_cols(yhat, xgrid)
+
+# convert south into factors 
+preds <- preds |>
+    mutate(south = case_match(south,
+                               0 ~ "North",
+                               1 ~ "South"))
+
+
+# plotting 
+ggplot(preds, aes(x = hs_grad, y = fit, fill = south, color = south)) +
+  geom_line(linewidth = 1) +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2, color = NA) 
+```
+
 ## T test
 
 `t.test()`
@@ -804,7 +848,7 @@ anova(lm(tvhours ~ 1 + college,
          data = d))
 ```
 
-## Contingency Table & Conditional Probabilities
+## Contingency Table 
 
 `janitor::tabyl()`
 
