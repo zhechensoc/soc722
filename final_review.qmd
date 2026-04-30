@@ -772,9 +772,10 @@ m3 <- lm(life_exp ~ 1 + hs_grad * south,
          data = states)
 broom::tidy(m3)
 
-
+# make predictions
 preds <- ggeffects::ggpredict(m3, terms = c("hs_grad", "south"))
 
+# plotting 
 plot(preds)
 ```
 
